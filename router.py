@@ -122,7 +122,7 @@ async def m_client(cliente: RPCClientesBase):
 
 """
 
-@router.post("/consulta_compras") #, dependencies=[Depends(JWTBearer())])
+@router.post("/consulta_compras", dependencies=[Depends(JWTBearer())])
 async def search_compra(compras: RPCCredencialBase):
     result = compras.dict()
     matrix_errores = {}

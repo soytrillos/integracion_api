@@ -67,8 +67,7 @@ class maestro_compras:
             'purchase.order.line', 'search_read', 
             [
                 [
-                    ['name', '=', order_id],
-                    ['qty_received', '>', 0],
+                    ['order_id', '=', order_id],
                     ['state', '=', 'purchase']
                 ]
             ], {'fields': ['order_id', 'product_id', 'product_qty', 'qty_received', 'taxes_id', 'price_unit']}
