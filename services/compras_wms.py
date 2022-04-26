@@ -13,6 +13,11 @@ class maestro_compras:
         uid = common.authenticate(sefl.db_rpc, sefl.username_rpc, sefl.password_rpc, {})
         models = xmlrpc.client.ServerProxy('{}/xmlrpc/2/object'.format(sefl.url_rpc))
         return models, uid
+
+    def validar_conexion(self, models, uid):
+        models = xmlrpc.client.ServerProxy('{}/xmlrpc/2/object'.format(self.url_rpc))
+        result = models.execute_kw(self.db_rpc, uid, self.password_rpc, 'res.partner', 'check_access_rights', ['read'], {'raise_exception': False})
+        return result
     
     def productos_rpc(self, models, uid, id_producto):
         result = models.execute_kw(self.db_rpc, uid, self.password_rpc, 

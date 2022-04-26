@@ -36,7 +36,7 @@ class maestra_proveedores:
             'l10n_latam.identification.type', 'search_read', 
             [
                 [
-                    ['name', '=', datos[1]]
+                    ['name', '=', datos['tipo_identificacion']]
                 ]
             ], {'fields': ['id']}
         )
@@ -47,7 +47,7 @@ class maestra_proveedores:
                 [], 
                 {'fields': ['id', 'name']}
             )
-            matrix_result['resultado'].append({'error_identificacion': f'El tipo de identificacion: {datos[1]}, no existe o esta incompleto', 'permitidos': identificaciones}) 
+            matrix_result['resultado'].append({'error_identificacion': f'El tipo de identificacion: {datos["tipo_identificacion"]}, no existe o esta incompleto', 'permitidos': identificaciones}) 
         else:
             s_identificacion = s_identificacion[0]['id']
 
@@ -58,7 +58,7 @@ class maestra_proveedores:
             'res.country', 'search_read', 
             [
                 [
-                    ['name', '=', datos[11].capitalize()]
+                    ['name', '=', datos['pais'].capitalize()]
                 ]
             ], {'fields': ['id']}
         )
@@ -67,14 +67,14 @@ class maestra_proveedores:
                 'res.country', 'search_read', 
                 [
                     [
-                        ['name', 'like', datos[11].capitalize()]
+                        ['name', 'like', datos["pais"].capitalize()]
                     ]
                 ], {'fields': ['name']}
             )
             if s_pais == []:
-                matrix_result['resultado'].append({'error_pais': f'El pais {datos[11]}, no existe o esta mal', 'semejanzas': 'No se encontraron'})
+                matrix_result['resultado'].append({'error_pais': f'El pais {datos["pais"]}, no existe o esta mal', 'semejanzas': 'No se encontraron'})
             else:
-                matrix_result['resultado'].append({'error_pais': f'El pais {datos[11]}, no existe o esta mal', 'semejanzas': s_pais[0]["name"] })
+                matrix_result['resultado'].append({'error_pais': f'El pais {datos["pais"]}, no existe o esta mal', 'semejanzas': s_pais[0]["name"] })
         else:
             s_pais = s_pais[0]['id']
 
@@ -85,7 +85,7 @@ class maestra_proveedores:
             'res.country.state', 'search_read', 
             [
                 [
-                    ['name', '=', datos[10].capitalize()]
+                    ['name', '=', datos["departamento"].capitalize()]
                 ]
             ], {'fields': ['id']}
         )
@@ -94,14 +94,14 @@ class maestra_proveedores:
                 'res.country', 'search_read', 
                 [
                     [
-                        ['name', 'like', datos[10].capitalize()]
+                        ['name', 'like', datos["departamento"].capitalize()]
                     ]
                 ], {'fields': ['name']}
             )
             if s_departamento == []:
-                matrix_result['resultado'].append({'error_departamento': f'El departamento {datos[10]}, no existe o esta mal', 'semejanzas': 'No se encontraron'})
+                matrix_result['resultado'].append({'error_departamento': f'El departamento {datos["departamento"]}, no existe o esta mal', 'semejanzas': 'No se encontraron'})
             else:
-                matrix_result['resultado'].append({'error_departamento': f'El departamento {datos[10]}, no existe o esta mal', 'semejanzas': s_departamento[0]["name"] })
+                matrix_result['resultado'].append({'error_departamento': f'El departamento {datos["departamento"]}, no existe o esta mal', 'semejanzas': s_departamento[0]["name"] })
         else:
             s_departamento = s_departamento[0]['id']
 
@@ -110,19 +110,19 @@ class maestra_proveedores:
                 'res.partner', 'create', 
                 [
                     {
-                        'vat': datos[0],
+                        'vat': datos["vat"],
                         'l10n_latam_identification_type_id': int(s_identificacion),
-                        'name': datos[2],
-                        'email': datos[3],
-                        'phone': datos[4],
-                        'mobile': datos[5],
-                        'street': datos[6],
-                        'street2': datos[7],
-                        'zip': datos[8],
-                        'city': datos[9],
+                        'name': datos["nombre_completo"],
+                        'email': datos["correo"],
+                        'phone': datos["telefono"],
+                        'mobile': datos["celular"],
+                        'street': datos["direccion"],
+                        'street2': datos["zona"],
+                        'zip': datos["codigo_postal"],
+                        'city': datos["ciudad"],
                         'state_id': int(s_departamento),
                         'country_id': int(s_pais),
-                        'supplier_rank': 1
+                        'customer_rank': 1
                     }
                 ]
             )

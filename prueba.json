@@ -1,0 +1,24 @@
+{
+    "url_rpc": "http://193.122.149.113:10015",
+    "db_rpc": "api_pruebas",
+    "email_rpc": "trillos2000@gmail.com",
+    "token_rpc": "ef8968f7afb6a8d3411beb21fe93a20cc00e6b8a",
+    "name": "P00005",
+    "partner_id": "1000644625",
+    "partner_ref": "2100",
+    "date_planned": "2022-04-24 14:56:00",
+    "detalle": [
+      {
+        "product_id": "777889",
+        "product_qty": 10,
+        "taxes_id": 19,
+        "price_unit": 10000.12
+      },
+      {
+        "product_id": "555411",
+        "product_qty": 6,
+        "taxes_id": 19,
+        "price_unit": 15000.57
+      }
+    ]
+}

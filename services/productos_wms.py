@@ -101,34 +101,37 @@ class maestra_productos:
 
 
         if matrix_result == {'resultado': []}:
-            result = models.execute_kw(self.db_rpc, uid, self.password_rpc, 
-                'product.template', 'create', 
-                [
-                    {
-                        "default_code": str(datos["default_code"]),
-                        "barcode": str(datos["barcode"]),
-                        "name": str(datos["name"]),
-                        "categ_id": int(s_categoria),
-                        "price": str(datos["precio"]),
-                        "standard_price": str(datos["costo"]),
-                        "uom_id": int(s_unidad),
-                        "uom_po_id": int(s_unidad),
-                        "taxes_id": [int(s_impuesto_sale)],
-                        "supplier_taxes_id": [int(s_impuesto_purchase)],
-                        "type": str(datos["tipo_producto"]),
-                        "volume": str(datos["volumen"]),
-                        "weight": str(datos["peso"]),
-                        "active": 1
-                    }
-                ]
-            )
-            matrix_result['resultado'].append({'id_producto': f'{result} - {datos["name"]}'})
+            try:
+                result = models.execute_kw(self.db_rpc, uid, self.password_rpc, 
+                    'product.template', 'create', 
+                    [
+                        {
+                            "default_code": str(datos["default_code"]),
+                            "barcode": str(datos["barcode"]),
+                            "name": str(datos["name"]),
+                            "categ_id": int(s_categoria),
+                            "price": str(datos["precio"]),
+                            "standard_price": str(datos["costo"]),
+                            "uom_id": int(s_unidad),
+                            "uom_po_id": int(s_unidad),
+                            "taxes_id": [int(s_impuesto_sale)],
+                            "supplier_taxes_id": [int(s_impuesto_purchase)],
+                            "type": str(datos["tipo_producto"]),
+                            "volume": str(datos["volumen"]),
+                            "weight": str(datos["peso"]),
+                            "active": 1
+                        }
+                    ]
+                )
+                matrix_result['resultado'].append({'id_producto': f'{result} - {datos["name"]}', 'creado': result})
+            except Exception as error:
+                matrix_result['resultado'].append({'error': f'{error} - {datos["name"]}'})
         return matrix_result
 
 
     def actualizar_producto(self, models, uid, datos, id_product):
         matrix_result = {}
-        matrix_result['resultado'] = []
+        matrix_result[f'{datos["default_code"]}'] = []
         """
             Validacion y creacion de la categoria
         """
@@ -164,7 +167,7 @@ class maestra_productos:
             ], {'fields': ['id']}
         )
         if s_unidad == []:
-            matrix_result['resultado'].append({'error_unidad': f'La unidad de medida: {datos["unidad_venta"]}, no existe'})
+            matrix_result[f'{datos["default_code"]}'].append({'error_unidad': f'La unidad de medida: {datos["unidad_venta"]}, no existe'})
         else:
             s_unidad = s_unidad[0]['id']
 
@@ -184,7 +187,7 @@ class maestra_productos:
         if s_impuesto_sale != []:
             s_impuesto_sale = s_impuesto_sale[0]['id']
         else:
-            matrix_result['resultado'].append({'error_impuesto': f'El impuesto {datos["iva_venta"]}, no existe'})
+            matrix_result[f'{datos["default_code"]}'].append({'error_impuesto': f'El impuesto {datos["iva_venta"]} para ventas, no existe'})
         
         s_impuesto_purchase = models.execute_kw(self.db_rpc, uid, self.password_rpc, 
             'account.tax', 'search_read', 
@@ -199,9 +202,9 @@ class maestra_productos:
         if s_impuesto_purchase != []:
             s_impuesto_purchase = s_impuesto_purchase[0]['id']
         else:
-            matrix_result['resultado'].append({'error_impuesto': f'El impuesto {datos["iva_venta"]}, no existe'})
+            matrix_result[f'{datos["default_code"]}'].append({'error_impuesto': f'El impuesto {datos["iva_venta"]} para compras, no existe'})
         
-        if matrix_result == {'resultado': []}:
+        if matrix_result == {f'{datos["default_code"]}': []}:
             try:
                 result = models.execute_kw(self.db_rpc, uid, self.password_rpc, 
                     'product.template', 'write', 
@@ -224,7 +227,7 @@ class maestra_productos:
                         }
                     ]
                 )
-                matrix_result['resultado'].append({'cod_producto': f'{id_product} - {datos["name"]}', 'code': result})
+                matrix_result[f'{datos["default_code"]}'].append({'cod_producto': f'{id_product} - {datos["name"]}', 'actualizado': result})
             except Exception as error:
                 print(f'Error: {error.args}')
         return matrix_result
