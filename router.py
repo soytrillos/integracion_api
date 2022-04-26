@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends
 from numpy import matrix
-from schema import RequestSchema, ResponseSchema, TokenResponse, RPCProductosBase, RPCClientesBase, RPCCredencialBase, ComprasBase
+from schema import RequestSchema, ResponseSchema, TokenResponse, RPCProductosBase, RPCClientesBase, RPCProveedoresBase, RPCCredencialBase, ComprasBase, VentasBase
 from sqlalchemy.orm import Session
 from config import get_db, ACCESS_TOKEN_EXPIRE_MINUTES
 from passlib.context import CryptContext
@@ -12,6 +12,7 @@ from services.productos_wms import maestra_productos
 from services.clientes_wms import maestra_clientes
 from services.proveedor_wms import maestra_proveedores
 from services.compras_wms import maestro_compras
+from services.ventas_wms import maestro_ventas
 
 router = APIRouter()
 
@@ -116,6 +117,27 @@ async def m_client(cliente: RPCClientesBase):
             matrix_return.append(actualizar)
     return matrix_return
 
+"""
+    Proveedores Router
+
+"""
+
+@router.post("/proveedores", dependencies=[Depends(JWTBearer())])
+async def m_supplier(proveedor: RPCProveedoresBase):
+    matrix_return = {}
+    matrix_return = []
+    result = proveedor.dict()
+    cls_client = maestra_proveedores(result['url_rpc'], result['db_rpc'], result['email_rpc'], result['token_rpc'])
+    cred = cls_client.cliente_rpc()
+    for client in result['clientes']:
+        search = cls_client.consulta_proveedor(cred[0], cred[1], client['vat'])
+        if search == []:
+            creacion = cls_client.crear_proveedor(cred[0], cred[1], client)
+            matrix_return.append(creacion)
+        else:
+            actualizar = cls_client.actualizar_proveedor(cred[0], cred[1], client, search[0]['id'])
+            matrix_return.append(actualizar)
+    return matrix_return
 
 """
     Compras Router
@@ -137,9 +159,9 @@ async def search_compra(compras: RPCCredencialBase):
 
     compras_dict = {}
     for en_compra in encabezado:
-        compras_dict[f'recepciones-{en_compra["id"]}'] = []
+        compras_dict[f'compra-{en_compra["id"]}'] = []
         cliente = cls_compra.clientes_rpc(conexion_rpc[0], conexion_rpc[1], en_compra['partner_id'][0])
-        compras_dict[f'recepciones-{en_compra["id"]}'].append({
+        compras_dict[f'compra-{en_compra["id"]}'].append({
                 'id': en_compra['id'], 
                 'name': en_compra['name'], 
                 'partner_id': cliente[0]['vat'], 
@@ -151,10 +173,9 @@ async def search_compra(compras: RPCCredencialBase):
         for det_compra in detalle:
             producto = cls_compra.productos_rpc(conexion_rpc[0], conexion_rpc[1], det_compra['product_id'][0])
             iva = cls_compra.iva_rpc(conexion_rpc[0], conexion_rpc[1], det_compra['taxes_id'][0])
-            compras_dict[f'recepciones-{en_compra["id"]}'].append({
+            compras_dict[f'compra-{en_compra["id"]}'].append({
                     'product_id': producto[0]['default_code'],
                     'product_qty': det_compra['product_qty'],
-                    'qty_received': det_compra['qty_received'],
                     'taxes_id': iva[0]['amount'],
                     'price_subtotal': det_compra['price_unit']
                 }
@@ -219,21 +240,113 @@ async def create_compra(compra: ComprasBase):
         matrix_errores['error_rpc'].append({'code': 500, 'msg': f'Error en las credenciales RPC {error}'})
         return matrix_errores
 
-    
-
-    #print(matrix_errores['error_maestras'])
     if matrix_errores['error_maestras'] == []:
         return compra
     else:
         return matrix_errores   
 
 
+"""
+    Ventas Router
 
-        """
-        if resultados_c[1]['cliente'] == []:
-            matrix_errores['error_maestras'].append({'code': 500, 'msg': f'Cliente {result["partner_id"]} no existe'})
-        elif resultados_c[1]['documento'] != []:
-            matrix_errores['error_maestras'].append({'code': 500, 'msg': f'Documento {result["name"]} existe'})
-        else:
-            print('Sin errores')
-        """ 
+"""
+
+@router.post("/consulta_ventas") #, dependencies=[Depends(JWTBearer())])
+async def search_venta(ventas: RPCCredencialBase):
+    result = ventas.dict()
+    matrix_errores = {}
+    try:
+        cls_venta = maestro_ventas(result['url_rpc'], result['db_rpc'], result['email_rpc'], result['token_rpc'])
+        conexion_rpc = cls_venta.conexion_rpc()
+        encabezado = cls_venta.sale_order_s(conexion_rpc[0], conexion_rpc[1])
+    except Exception as error:
+        matrix_errores['error_rpc'] = []
+        matrix_errores['error_rpc'].append({'code': 500, 'msg': f'Error en las credenciales RPC {error}'})
+        return matrix_errores
+
+    ventas_dict = {}
+    for en_venta in encabezado:
+        ventas_dict[f'venta-{en_venta["id"]}'] = []
+        cliente = cls_venta.clientes_rpc(conexion_rpc[0], conexion_rpc[1], en_venta['partner_id'][0])
+        ventas_dict[f'venta-{en_venta["id"]}'].append({
+                'id': en_venta['id'], 
+                'name': en_venta['name'], 
+                'partner_id': cliente[0]['vat'],
+                'date_order': en_venta['date_order']
+            }
+        )
+        detalle = cls_venta.sale_order_line_s(conexion_rpc[0], conexion_rpc[1], en_venta['id'])
+        for det_compra in detalle:
+            producto = cls_venta.productos_rpc(conexion_rpc[0], conexion_rpc[1], det_compra['product_id'][0])
+            iva = cls_venta.iva_rpc(conexion_rpc[0], conexion_rpc[1], det_compra['tax_id'][0])
+            ventas_dict[f'venta-{en_venta["id"]}'].append({
+                    'product_id': producto[0]['default_code'],
+                    'product_uom_qty': det_compra['product_uom_qty'],
+                    'tax_id': iva[0]['amount'],
+                    'price_unit': det_compra['price_unit']
+                }
+            )
+
+    return ventas_dict
+
+@router.post("/creacion_ventas")
+async def create_venta(venta: VentasBase):
+    result = venta.dict()
+    matrix_errores = {}
+    matrix_errores['error_maestras'] = []
+    matrix_errores['error_rpc'] = []
+
+    matrix_productos = {}
+    matrix_productos = []
+
+    try:
+        cls_venta = maestro_ventas(result['url_rpc'], result['db_rpc'], result['email_rpc'], result['token_rpc'])
+        conexion_rpc = cls_venta.conexion_rpc()
+        
+        try:
+            x_cl = maestra_clientes(result['url_rpc'], result['db_rpc'], result['email_rpc'], result['token_rpc'])
+            cred = x_cl.cliente_rpc()
+            search_cli = x_cl.consulta_cliente(cred[0], cred[1], result['partner_id'])
+            cliente = search_cli[0]['id']
+        except Exception as error:
+            matrix_errores['error_maestras'].append({'code': 500, 'msg': f'Cliente "{result["partner_id"]}" no existe'})
+            cliente = ''
+
+        for impuesto in result['detalle']:
+            iva = cls_venta.iva_producto(cred[0], cred[1], impuesto["tax_id"])
+            if iva == []:
+                matrix_errores['error_maestras'].append({'code': 500, 'msg': f'Impuesto "{impuesto["tax_id"]}", del producto {impuesto["product_id"]} no existe'})
+            else:
+                iva = iva[0]['id']
+
+
+        try:
+            documento = cls_venta.validacion_documento(conexion_rpc[0], conexion_rpc[1], result)
+            if documento != {'documento': []}:
+                matrix_errores['error_maestras'].append({'code': 500, 'msg': f'Documento "{result["name"]}" ya existe'})
+            else:
+                cl_x = maestra_productos(result['url_rpc'], result['db_rpc'], result['email_rpc'], result['token_rpc'])
+                cred = cl_x.cliente_rpc()
+                for product in result['detalle']:
+                    search_pro = cl_x.consulta_producto(cred[0], cred[1], product['product_id'])
+                    if search_pro == []:
+                        matrix_errores['error_maestras'].append({'code': 500, 'msg': f'Producto "{product["product_id"]}" no existe'})
+                    else:
+                        producto = search_pro[0]['id']
+                        matrix_productos.append({'producto': producto})
+
+                if matrix_errores['error_maestras'] == []:
+                    encabezado = cls_venta.sale_order_c(conexion_rpc[0], conexion_rpc[1], result, cliente)
+                    for detalle in result['detalle']:
+                        detalles = cls_venta.sale_order_line_c(conexion_rpc[0], conexion_rpc[1], detalle, encabezado, detalle['product_id'])
+        except Exception as error:
+            matrix_errores['error_maestras'].append({'code': 500, 'msg': f'Error {error}'})
+
+    except Exception as error:
+        matrix_errores['error_rpc'].append({'code': 500, 'msg': f'Error en las credenciales RPC {error}'})
+        return matrix_errores
+
+    if matrix_errores['error_maestras'] == []:
+        return venta
+    else:
+        return matrix_errores
