@@ -73,7 +73,7 @@ class maestro_ventas:
                     ['order_id', '=', order_id],
                     ['state', '=', 'sale']
                 ]
-            ], {'fields': ['order_id', 'product_id', 'product_uom_qty', 'tax_id', 'price_unit']}
+            ], {'fields': ['order_id', 'product_id', 'product_uom_qty', 'tax_id', 'price_unit', 'discount']}
         )        
         return result
     

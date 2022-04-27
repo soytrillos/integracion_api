@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import xmlrpc.client
+import datetime
 
 class maestro_compras:
     def __init__(self, url_rpc, db_rpc, username_rpc, password_rpc):
@@ -58,13 +59,16 @@ class maestro_compras:
         return result
 
     def purchase_order_s(self, models, uid):
+        now = datetime.datetime.utcnow()
+        filtro = now - datetime.timedelta(days=3)
+        filtro = filtro.strftime('%Y-%m-%d')
         result = models.execute_kw(self.db_rpc, uid, self.password_rpc, 
             'purchase.order', 'search_read', 
             [
                 [
                     ['state', '=', 'purchase'],
                     ['invoice_status', '=', 'to invoice'],
-                    ['effective_date', '>=', '2022-04-24']
+                    ['effective_date', '>=', filtro]
                 ]
             ], {'fields': ['id', 'name', 'partner_id', 'partner_ref', 'date_approve', 'incoming_picking_count'], 'order': 'id ASC'}
         )        
