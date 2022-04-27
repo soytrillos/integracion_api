@@ -8,10 +8,13 @@ class maestra_productos:
         self.password_rpc = password_rpc
 
     def cliente_rpc(sefl):
-        common = xmlrpc.client.ServerProxy('{}/xmlrpc/2/common'.format(sefl.url_rpc))
-        uid = common.authenticate(sefl.db_rpc, sefl.username_rpc, sefl.password_rpc, {})
-        models = xmlrpc.client.ServerProxy('{}/xmlrpc/2/object'.format(sefl.url_rpc))
-        return models, uid
+        try:
+            common = xmlrpc.client.ServerProxy('{}/xmlrpc/2/common'.format(sefl.url_rpc))
+            uid = common.authenticate(sefl.db_rpc, sefl.username_rpc, sefl.password_rpc, {})
+            models = xmlrpc.client.ServerProxy('{}/xmlrpc/2/object'.format(sefl.url_rpc))
+            return models, uid
+        except Exception as error:
+            return False
 
     def consulta_producto(self, models, uid, cod_product):
         result = models.execute_kw(self.db_rpc, uid, self.password_rpc, 
@@ -102,27 +105,57 @@ class maestra_productos:
 
         if matrix_result == {'resultado': []}:
             try:
-                result = models.execute_kw(self.db_rpc, uid, self.password_rpc, 
-                    'product.template', 'create', 
-                    [
-                        {
-                            "default_code": str(datos["default_code"]),
-                            "barcode": str(datos["barcode"]),
-                            "name": str(datos["name"]),
-                            "categ_id": int(s_categoria),
-                            "price": str(datos["precio"]),
-                            "standard_price": str(datos["costo"]),
-                            "uom_id": int(s_unidad),
-                            "uom_po_id": int(s_unidad),
-                            "taxes_id": [int(s_impuesto_sale)],
-                            "supplier_taxes_id": [int(s_impuesto_purchase)],
-                            "type": str(datos["tipo_producto"]),
-                            "volume": str(datos["volumen"]),
-                            "weight": str(datos["peso"]),
-                            "active": 1
-                        }
-                    ]
-                )
+                if datos["vence"] > 0:
+                    result = models.execute_kw(self.db_rpc, uid, self.password_rpc, 
+                        'product.template', 'create', 
+                        [
+                            {
+                                "default_code": str(datos["default_code"]),
+                                "barcode": str(datos["barcode"]),
+                                "name": str(datos["name"]),
+                                "categ_id": int(s_categoria),
+                                "price": str(datos["precio"]),
+                                "standard_price": str(datos["costo"]),
+                                "uom_id": int(s_unidad),
+                                "uom_po_id": int(s_unidad),
+                                "taxes_id": [int(s_impuesto_sale)],
+                                "supplier_taxes_id": [int(s_impuesto_purchase)],
+                                "type": str(datos["tipo_producto"]),
+                                "volume": str(datos["volumen"]),
+                                "weight": str(datos["peso"]),
+                                "tracking": str(datos["lote"]),
+                                "use_expiration_date": 1,
+                                "expiration_time": int(datos["vence"]),
+                                "use_time": int(datos["vence"]),
+                                "removal_time": int(datos["vence"]),
+                                "alert_time": int(datos["vence"]),
+                                "active": 1
+                            }
+                        ]
+                    )
+                else:
+                    result = models.execute_kw(self.db_rpc, uid, self.password_rpc, 
+                        'product.template', 'create', 
+                        [
+                            {
+                                "default_code": str(datos["default_code"]),
+                                "barcode": str(datos["barcode"]),
+                                "name": str(datos["name"]),
+                                "categ_id": int(s_categoria),
+                                "price": str(datos["precio"]),
+                                "standard_price": str(datos["costo"]),
+                                "uom_id": int(s_unidad),
+                                "uom_po_id": int(s_unidad),
+                                "taxes_id": [int(s_impuesto_sale)],
+                                "supplier_taxes_id": [int(s_impuesto_purchase)],
+                                "type": str(datos["tipo_producto"]),
+                                "volume": str(datos["volumen"]),
+                                "weight": str(datos["peso"]),
+                                "tracking": str(datos["lote"]),
+                                "active": 1
+                            }
+                        ]
+                    )
                 matrix_result['resultado'].append({'id_producto': f'{result} - {datos["name"]}', 'creado': result})
             except Exception as error:
                 matrix_result['resultado'].append({'error': f'{error} - {datos["name"]}'})
@@ -206,27 +239,57 @@ class maestra_productos:
         
         if matrix_result == {f'{datos["default_code"]}': []}:
             try:
-                result = models.execute_kw(self.db_rpc, uid, self.password_rpc, 
-                    'product.template', 'write', 
-                    [
-                        [id_product], 
-                        {
-                            "default_code": str(datos["default_code"]),
-                            "barcode": str(datos["barcode"]),
-                            "name": str(datos["name"]),
-                            "categ_id": int(s_categoria),
-                            "price": str(datos["precio"]),
-                            "standard_price": str(datos["costo"]),
-                            "uom_id": int(s_unidad),
-                            "uom_po_id": int(s_unidad),
-                            "taxes_id": [int(s_impuesto_sale)],
-                            "supplier_taxes_id": [int(s_impuesto_purchase)],
-                            "type": str(datos["tipo_producto"]),
-                            "volume": str(datos["volumen"]),
-                            "weight": str(datos["peso"])
-                        }
-                    ]
-                )
+                if datos["vence"] > 0:
+                    result = models.execute_kw(self.db_rpc, uid, self.password_rpc, 
+                        'product.template', 'write', 
+                        [
+                            [id_product], 
+                            {
+                                "default_code": str(datos["default_code"]),
+                                "barcode": str(datos["barcode"]),
+                                "name": str(datos["name"]),
+                                "categ_id": int(s_categoria),
+                                "price": str(datos["precio"]),
+                                "standard_price": str(datos["costo"]),
+                                "uom_id": int(s_unidad),
+                                "uom_po_id": int(s_unidad),
+                                "taxes_id": [int(s_impuesto_sale)],
+                                "supplier_taxes_id": [int(s_impuesto_purchase)],
+                                "type": str(datos["tipo_producto"]),
+                                "volume": str(datos["volumen"]),
+                                "weight": str(datos["peso"]),
+                                "tracking": str(datos["lote"]),
+                                "use_expiration_date": 1,
+                                "expiration_time": int(datos["vence"]),
+                                "use_time": int(datos["vence"]),
+                                "removal_time": int(datos["vence"]),
+                                "alert_time": int(datos["vence"])
+                            }
+                        ]
+                    )
+                else:
+                    result = models.execute_kw(self.db_rpc, uid, self.password_rpc, 
+                        'product.template', 'write', 
+                        [
+                            [id_product], 
+                            {
+                                "default_code": str(datos["default_code"]),
+                                "barcode": str(datos["barcode"]),
+                                "name": str(datos["name"]),
+                                "categ_id": int(s_categoria),
+                                "price": str(datos["precio"]),
+                                "standard_price": str(datos["costo"]),
+                                "uom_id": int(s_unidad),
+                                "uom_po_id": int(s_unidad),
+                                "taxes_id": [int(s_impuesto_sale)],
+                                "supplier_taxes_id": [int(s_impuesto_purchase)],
+                                "type": str(datos["tipo_producto"]),
+                                "volume": str(datos["volumen"]),
+                                "weight": str(datos["peso"]),
+                                "tracking": str(datos["lote"])
+                            }
+                        ]
+                    )
                 matrix_result[f'{datos["default_code"]}'].append({'cod_producto': f'{id_product} - {datos["name"]}', 'actualizado': result})
             except Exception as error:
                 print(f'Error: {error.args}')

@@ -10,10 +10,13 @@ class maestra_proveedores:
         self.password_rpc = password_rpc
 
     def cliente_rpc(sefl):
-        common = xmlrpc.client.ServerProxy('{}/xmlrpc/2/common'.format(sefl.url_rpc))
-        uid = common.authenticate(sefl.db_rpc, sefl.username_rpc, sefl.password_rpc, {})
-        models = xmlrpc.client.ServerProxy('{}/xmlrpc/2/object'.format(sefl.url_rpc))
-        return models, uid
+        try:
+            common = xmlrpc.client.ServerProxy('{}/xmlrpc/2/common'.format(sefl.url_rpc))
+            uid = common.authenticate(sefl.db_rpc, sefl.username_rpc, sefl.password_rpc, {})
+            models = xmlrpc.client.ServerProxy('{}/xmlrpc/2/object'.format(sefl.url_rpc))
+            return models, uid
+        except Exception as error:
+            return False
 
     def consulta_proveedor(self, models, uid, nit_cliente):
         result = models.execute_kw(self.db_rpc, uid, self.password_rpc, 
@@ -50,6 +53,32 @@ class maestra_proveedores:
             matrix_result['resultado'].append({'error_identificacion': f'El tipo de identificacion: {datos["tipo_identificacion"]}, no existe o esta incompleto', 'permitidos': identificaciones}) 
         else:
             s_identificacion = s_identificacion[0]['id']
+
+        """
+            Validar o crear Zona
+        """
+        # Busca
+        zona = models.execute_kw(self.db_rpc, uid, self.password_rpc, 
+            'partner.delivery.zone', 'search_read', 
+            [
+                [
+                    ['name', '=', datos["zona"]]
+                ]
+            ], {'fields': ['name']}
+        )
+
+        if zona == []:
+            zona = models.execute_kw(self.db_rpc, uid, self.password_rpc, 
+                'partner.delivery.zone', 'create', 
+                [
+                    {
+                        'code': datos["zona"],
+                        'name': datos["zona"]
+                    }
+                ]
+            )
+        else:
+            zona = zona[0]['id']
 
         """
             Validacion pais 
@@ -117,21 +146,47 @@ class maestra_proveedores:
                         'phone': datos["telefono"],
                         'mobile': datos["celular"],
                         'street': datos["direccion"],
-                        'street2': datos["zona"],
+                        'delivery_zone_id': zona,
                         'zip': datos["codigo_postal"],
                         'city': datos["ciudad"],
                         'state_id': int(s_departamento),
                         'country_id': int(s_pais),
-                        'customer_rank': 1
+                        'supplier_rank': 1
                     }
                 ]
             )
-            matrix_result['resultado'].append({'id_cliente': result})
+            matrix_result['resultado'].append({'id_proveedor': result})
         return matrix_result
 
     def actualizar_proveedor(self, models, uid, datos, id_cliente):
         matrix_result = {}
         matrix_result['resultado'] = []
+
+        """
+            Validar o crear Zona
+        """
+        # Busca
+        zona = models.execute_kw(self.db_rpc, uid, self.password_rpc, 
+            'partner.delivery.zone', 'search_read', 
+            [
+                [
+                    ['name', '=', datos["zona"]]
+                ]
+            ], {'fields': ['name']}
+        )
+
+        if zona == []:
+            zona = models.execute_kw(self.db_rpc, uid, self.password_rpc, 
+                'partner.delivery.zone', 'create', 
+                [
+                    {
+                        'code': datos["zona"],
+                        'name': datos["zona"]
+                    }
+                ]
+            )
+        else:
+            zona = zona[0]['id']
         
         """
             Validacion pais 
@@ -140,7 +195,7 @@ class maestra_proveedores:
             'res.country', 'search_read', 
             [
                 [
-                    ['name', '=', datos[11].capitalize()]
+                    ['name', '=', datos["pais"].capitalize()]
                 ]
             ], {'fields': ['id']}
         )
@@ -149,14 +204,14 @@ class maestra_proveedores:
                 'res.country', 'search_read', 
                 [
                     [
-                        ['name', 'like', datos[11].capitalize()]
+                        ['name', 'like', datos["pais"].capitalize()]
                     ]
                 ], {'fields': ['name']}
             )
             if s_pais == []:
-                matrix_result['resultado'].append({'error_pais': f'El pais {datos[11]}, no existe o esta mal', 'semejanzas': 'No se encontraron'})
+                matrix_result['resultado'].append({'error_pais': f'El pais {datos["pais"]}, no existe o esta mal', 'semejanzas': 'No se encontraron'})
             else:
-                matrix_result['resultado'].append({'error_pais': f'El pais {datos[11]}, no existe o esta mal', 'semejanzas': s_pais[0]["name"] })
+                matrix_result['resultado'].append({'error_pais': f'El pais {datos["pais"]}, no existe o esta mal', 'semejanzas': s_pais[0]["name"] })
         else:
             s_pais = s_pais[0]['id']
 
@@ -167,7 +222,7 @@ class maestra_proveedores:
             'res.country.state', 'search_read', 
             [
                 [
-                    ['name', '=', datos[10].capitalize()]
+                    ['name', '=', datos["departamento"].capitalize()]
                 ]
             ], {'fields': ['id']}
         )
@@ -176,14 +231,14 @@ class maestra_proveedores:
                 'res.country', 'search_read', 
                 [
                     [
-                        ['name', 'like', datos[10].capitalize()]
+                        ['name', 'like', datos["departamento"].capitalize()]
                     ]
                 ], {'fields': ['name']}
             )
             if s_departamento == []:
-                matrix_result['resultado'].append({'error_departamento': f'El departamento {datos[10]}, no existe o esta mal', 'semejanzas': 'No se encontraron'})
+                matrix_result['resultado'].append({'error_departamento': f'El departamento {datos["departamento"]}, no existe o esta mal', 'semejanzas': 'No se encontraron'})
             else:
-                matrix_result['resultado'].append({'error_departamento': f'El departamento {datos[10]}, no existe o esta mal', 'semejanzas': s_departamento[0]["name"] })
+                matrix_result['resultado'].append({'error_departamento': f'El departamento {datos["departamento"]}, no existe o esta mal', 'semejanzas': s_departamento[0]["name"] })
         else:
             s_departamento = s_departamento[0]['id']
         
@@ -193,18 +248,19 @@ class maestra_proveedores:
                 [
                     [id_cliente],
                     {
-                        'name': datos[2],
-                        'email': datos[3],
-                        'phone': datos[4],
-                        'mobile': datos[5],
-                        'street': datos[6],
-                        'street2': datos[7],
-                        'zip': datos[8],
-                        'city': datos[9],
+                        'name': datos["nombre_completo"],
+                        'email': datos["correo"],
+                        'phone': datos["telefono"],
+                        'mobile': datos["celular"],
+                        'street': datos["direccion"],
+                        'delivery_zone_id': zona,
+                        'zip': datos["codigo_postal"],
+                        'city': datos["ciudad"],
                         'state_id': int(s_departamento),
-                        'country_id': int(s_pais)
+                        'country_id': int(s_pais),
+                        'supplier_rank': 1
                     }
                 ]
             )
-            matrix_result['resultado'].append({'id_cliente': id_cliente, 'code': result})
+            matrix_result['resultado'].append({'id_proveedor': id_cliente, 'code': result})
         return matrix_result

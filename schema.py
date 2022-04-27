@@ -35,6 +35,8 @@ class ProductosBase(BaseModel):
     tipo_producto: str
     volumen: float
     peso: float
+    lote: str
+    vence: int
 
 class RPCProductosBase(BaseModel):
     url_rpc: str

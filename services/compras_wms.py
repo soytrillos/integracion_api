@@ -9,10 +9,13 @@ class maestro_compras:
         self.password_rpc = password_rpc
 
     def conexion_rpc(sefl):
-        common = xmlrpc.client.ServerProxy('{}/xmlrpc/2/common'.format(sefl.url_rpc))
-        uid = common.authenticate(sefl.db_rpc, sefl.username_rpc, sefl.password_rpc, {})
-        models = xmlrpc.client.ServerProxy('{}/xmlrpc/2/object'.format(sefl.url_rpc))
-        return models, uid
+        try:
+            common = xmlrpc.client.ServerProxy('{}/xmlrpc/2/common'.format(sefl.url_rpc))
+            uid = common.authenticate(sefl.db_rpc, sefl.username_rpc, sefl.password_rpc, {})
+            models = xmlrpc.client.ServerProxy('{}/xmlrpc/2/object'.format(sefl.url_rpc))
+            return models, uid
+        except Exception as error:
+            return False
 
     def validar_conexion(self, models, uid):
         models = xmlrpc.client.ServerProxy('{}/xmlrpc/2/object'.format(self.url_rpc))
@@ -63,7 +66,7 @@ class maestro_compras:
                     ['invoice_status', '=', 'to invoice'],
                     ['effective_date', '>=', '2022-04-24']
                 ]
-            ], {'fields': ['id', 'name', 'partner_id', 'partner_ref', 'date_approve', 'incoming_picking_count']}
+            ], {'fields': ['id', 'name', 'partner_id', 'partner_ref', 'date_approve', 'incoming_picking_count'], 'order': 'id ASC'}
         )        
         return result
 

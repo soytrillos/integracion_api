@@ -1,5 +1,12 @@
-# -*- coding: utf-8 -*-
 import xmlrpc.client
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+URL_RPC = os.getenv('url_rpc')
+USER_RPC = os.getenv('email_rpc')
+PASS_RPC = os.getenv('token_rpc')
+DB_RPC = os.getenv('db_rpc')
 
 class maestra_clientes:
     def __init__(self, url_rpc, db_rpc, username_rpc, password_rpc):
@@ -27,7 +34,7 @@ class maestra_clientes:
             ], {'fields': ['id', 'name', 'vat']}
         )        
         return result
-    
+
     def crear_cliente(self, models, uid, datos):
         matrix_result = {}
         matrix_result['resultado'] = []
@@ -160,32 +167,6 @@ class maestra_clientes:
     def actualizar_cliente(self, models, uid, datos, id_cliente):
         matrix_result = {}
         matrix_result['resultado'] = []
-
-        """
-            Validar o crear Zona
-        """
-        # Busca
-        zona = models.execute_kw(self.db_rpc, uid, self.password_rpc, 
-            'partner.delivery.zone', 'search_read', 
-            [
-                [
-                    ['name', '=', datos["zona"]]
-                ]
-            ], {'fields': ['name']}
-        )
-
-        if zona == []:
-            zona = models.execute_kw(self.db_rpc, uid, self.password_rpc, 
-                'partner.delivery.zone', 'create', 
-                [
-                    {
-                        'code': datos["zona"],
-                        'name': datos["zona"]
-                    }
-                ]
-            )
-        else:
-            zona = zona[0]['id']
         
         """
             Validacion pais 
@@ -213,6 +194,32 @@ class maestra_clientes:
                 matrix_result['resultado'].append({'error_pais': f'El pais {datos["pais"]}, no existe o esta mal', 'semejanzas': s_pais[0]["name"] })
         else:
             s_pais = s_pais[0]['id']
+
+        """
+            Validar o crear Zona
+        """
+        # Busca
+        zona = models.execute_kw(self.db_rpc, uid, self.password_rpc, 
+            'partner.delivery.zone', 'search_read', 
+            [
+                [
+                    ['name', '=', datos["zona"]]
+                ]
+            ], {'fields': ['name']}
+        )
+
+        if zona == []:
+            zona = models.execute_kw(self.db_rpc, uid, self.password_rpc, 
+                'partner.delivery.zone', 'create', 
+                [
+                    {
+                        'code': datos["zona"],
+                        'name': datos["zona"]
+                    }
+                ]
+            )
+        else:
+            zona = zona[0]['id']
 
         """
             Validacion departamento
@@ -256,10 +263,23 @@ class maestra_clientes:
                         'zip': datos["codigo_postal"],
                         'city': datos["ciudad"],
                         'state_id': int(s_departamento),
-                        'country_id': int(s_pais),
-                        'customer_rank': 1
+                        'country_id': int(s_pais)
                     }
                 ]
             )
             matrix_result['resultado'].append({'id_cliente': f'{id_cliente} - {datos["nombre_completo"]}', 'code': result})
         return matrix_result
+
+# Clientes
+clientes = [{'vat': '1000644625', 'tipo_identificacion': 'NIT', 'nombre_completo': 'Simon Andres Trillos', 'correo': 'simon.trillos@developtrillos.tech', 'telefono': '5981525', 'celular': '314258054685', 'direccion': 'Cll 10', 'zona': 'METROPOLITANO NORTE', 'codigo_postal': '5555001', 'ciudad': 'Bello', 'departamento': 'Antioquia', 'pais': 'Colombia'}]
+print(clientes)
+x_cl = maestra_clientes(URL_RPC, DB_RPC, USER_RPC, PASS_RPC)
+cred = x_cl.cliente_rpc()
+search = x_cl.consulta_cliente(cred[0], cred[1], clientes[0]["vat"])
+print(search)
+if search == []:
+    creacion = x_cl.crear_cliente(cred[0], cred[1], clientes[0])
+    print(creacion)
+else:
+    actualizar = x_cl.actualizar_cliente(cred[0], cred[1], clientes[0], search[0]['id'])
+    print(actualizar)

@@ -9,10 +9,13 @@ class maestro_ventas:
         self.password_rpc = password_rpc
 
     def conexion_rpc(sefl):
-        common = xmlrpc.client.ServerProxy('{}/xmlrpc/2/common'.format(sefl.url_rpc))
-        uid = common.authenticate(sefl.db_rpc, sefl.username_rpc, sefl.password_rpc, {})
-        models = xmlrpc.client.ServerProxy('{}/xmlrpc/2/object'.format(sefl.url_rpc))
-        return models, uid
+        try:
+            common = xmlrpc.client.ServerProxy('{}/xmlrpc/2/common'.format(sefl.url_rpc))
+            uid = common.authenticate(sefl.db_rpc, sefl.username_rpc, sefl.password_rpc, {})
+            models = xmlrpc.client.ServerProxy('{}/xmlrpc/2/object'.format(sefl.url_rpc))
+            return models, uid
+        except Exception as error:
+            return False
     
     def productos_rpc(self, models, uid, id_producto):
         result = models.execute_kw(self.db_rpc, uid, self.password_rpc, 
@@ -58,7 +61,7 @@ class maestro_ventas:
                     ['invoice_status', '=', 'to invoice'],
                     ['date_order', '>=', '2022-04-24']
                 ]
-            ], {'fields': ['id', 'name', 'partner_id', 'date_order', 'delivery_count']}
+            ], {'fields': ['id', 'name', 'partner_id', 'date_order', 'delivery_count'], 'order': 'id ASC'}
         )        
         return result
 
