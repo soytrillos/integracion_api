@@ -98,7 +98,8 @@ class maestro_ventas:
                 {
                     "name": str(datos["name"]),
                     "partner_id": int(id_cliente),
-                    "date_order": str(datos["date_order"])
+                    "date_order": str(datos["date_order"]),
+                    "state": "sale"
                 }
             ]
         )

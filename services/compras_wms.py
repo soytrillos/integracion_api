@@ -104,7 +104,8 @@ class maestro_compras:
                     "name": str(datos["name"]),
                     "partner_id": int(id_cliente),
                     "partner_ref": str(datos["partner_ref"]),
-                    "date_planned": str(datos["date_planned"])
+                    "date_planned": str(datos["date_planned"]),
+                    "state": "purchase"
                 }
             ]
         )
