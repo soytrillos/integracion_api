@@ -157,7 +157,8 @@ class maestro_ventas:
                         "product_id": int(producto[0]['id']),
                         "product_uom_qty": float(datos["product_uom_qty"]),
                         "tax_id": [int(s_impuesto_sale)],
-                        "price_unit": float(datos["price_unit"])
+                        "price_unit": float(datos["price_unit"]),
+                        "discount": float(datos["discount"])
                     }
                 ]
             )

@@ -342,7 +342,8 @@ async def search_venta(ventas: RPCCredencialBase):
                         'product_id': producto[0]['default_code'],
                         'product_uom_qty': det_compra['product_uom_qty'],
                         'tax_id': iva[0]['amount'],
-                        'price_unit': det_compra['price_unit']
+                        'price_unit': det_compra['price_unit'],
+                        'discount': det_compra['discount']
                     }
                 )
 

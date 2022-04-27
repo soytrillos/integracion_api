@@ -111,6 +111,7 @@ class ItemsVentaBase(BaseModel):
     product_uom_qty: float
     tax_id: float
     price_unit: float
+    discount: float
 
 class VentasBase(RPCCredencialBase):
     name: str
