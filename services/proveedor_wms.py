@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-from unittest import result
 import xmlrpc.client
 
 class maestra_proveedores:
