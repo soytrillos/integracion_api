@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends
 import fastapi
-from schema import RequestSchema, ResponseSchema, TokenResponse, RPCProductosBase, RPCClientesBase, RPCProveedoresBase, RPCCredencialBase, ComprasBase, VentasBase
+from schema import RequestSchema, ResponseSchema, TokenResponse, RPCProductosBase, RPCClientesBase, RPCProveedoresBase, RPCCredencialBase, ComprasBase, VentasBase, TransferenciaInternaBase, DevolucionBase, MinMaxBase, SupplierProductBase
 from sqlalchemy.orm import Session
 from config import get_db, ACCESS_TOKEN_EXPIRE_MINUTES
 from passlib.context import CryptContext
@@ -14,6 +14,7 @@ from services.clientes_wms import maestra_clientes
 from services.proveedor_wms import maestra_proveedores
 from services.compras_wms import maestro_compras
 from services.ventas_wms import maestro_ventas
+from services.transacciones_wms import maestro_transacciones
 
 router = APIRouter()
 
@@ -292,7 +293,6 @@ async def create_compra(compra: ComprasBase):
             )
 
         if matrix_errores['error_maestras'] == []:
-            print(compra)
             raise fastapi.HTTPException(
                 status_code=200, detail=result
             )
@@ -427,6 +427,172 @@ async def create_venta(venta: VentasBase):
             )
 
     else:
+        matrix_errores['error_rpc'].append({'code': 401, 'msg': f'Error en las credenciales RPC'})
+        raise fastapi.HTTPException(
+            status_code=401, detail=matrix_errores
+        )
+
+
+"""
+    Transacciones Router
+
+"""
+@router.post("/consulta_tr_internas") #, dependencies=[Depends(JWTBearer())])
+async def search_tr_interna_s(tr_interna_s: RPCCredencialBase):
+    result = tr_interna_s.dict()
+    matrix_errores = {}
+
+    cls_tr_interno_c = maestro_transacciones(result['url_rpc'], result['db_rpc'], result['email_rpc'], result['token_rpc'])
+    conexion_rpc = cls_tr_interno_c.conexion_rpc()
+
+    if conexion_rpc != False:
+        resultado = cls_tr_interno_c.transferencias_internas_s(conexion_rpc[0], conexion_rpc[1])
+        raise fastapi.HTTPException(
+            status_code=200, detail=resultado
+        )
+
+    else:
+        matrix_errores['error_rpc'] = []
+        matrix_errores['error_rpc'].append({'code': 401, 'msg': f'Error en las credenciales RPC'})
+        raise fastapi.HTTPException(
+            status_code=401, detail=matrix_errores
+        )
+
+@router.post("/creacion_tr_internas") #, dependencies=[Depends(JWTBearer())])
+async def create_tr_interna_c(tr_interna_c: TransferenciaInternaBase):
+    result = tr_interna_c.dict()
+    matrix_errores = {}
+    matrix_errores['error_rpc'] = []
+
+    cls_tr_interno_c = maestro_transacciones(result['url_rpc'], result['db_rpc'], result['email_rpc'], result['token_rpc'])
+    conexion_rpc = cls_tr_interno_c.conexion_rpc()
+
+    if conexion_rpc != False:
+        resultado = cls_tr_interno_c.transferencias_internas_c(conexion_rpc[0], conexion_rpc[1], result)
+        response_find = str(resultado).find('error') 
+        if response_find == -1:
+            raise fastapi.HTTPException(
+                status_code=200, detail=resultado
+            )
+        else:
+            raise fastapi.HTTPException(
+                status_code=400, detail=resultado
+            )
+
+    else:
+        matrix_errores['error_rpc'] = []
+        matrix_errores['error_rpc'].append({'code': 401, 'msg': f'Error en las credenciales RPC'})
+        raise fastapi.HTTPException(
+            status_code=401, detail=matrix_errores
+        )
+
+@router.post("/consulta_devolucion_mercancia") #, dependencies=[Depends(JWTBearer())])
+async def consulta_devolucion_m(dv_mercancia: RPCCredencialBase):
+    result = dv_mercancia.dict()
+    matrix_errores = {}
+    matrix_errores['error_rpc'] = []
+
+    cls_dv_mercancia_s = maestro_transacciones(result['url_rpc'], result['db_rpc'], result['email_rpc'], result['token_rpc'])
+    conexion_rpc = cls_dv_mercancia_s.conexion_rpc()
+
+    if conexion_rpc != False:
+        resultado = cls_dv_mercancia_s.devolucion_mercancia_s(conexion_rpc[0], conexion_rpc[1])
+        response_find = str(resultado).find('error') 
+        if response_find == -1:
+            raise fastapi.HTTPException(
+                status_code=200, detail=resultado
+            )
+        else:
+            raise fastapi.HTTPException(
+                status_code=400, detail=resultado
+            )
+
+    else:
+        matrix_errores['error_rpc'] = []
+        matrix_errores['error_rpc'].append({'code': 401, 'msg': f'Error en las credenciales RPC'})
+        raise fastapi.HTTPException(
+            status_code=401, detail=matrix_errores
+        )
+
+@router.post("/creacion_devolucion_mercancia") #, dependencies=[Depends(JWTBearer())])
+async def create_devolucion_m(dv_mercancia_c: DevolucionBase):
+    result = dv_mercancia_c.dict()
+    matrix_errores = {}
+    matrix_errores['error_rpc'] = []
+
+    cls_dv_mercancia_c = maestro_transacciones(result['url_rpc'], result['db_rpc'], result['email_rpc'], result['token_rpc'])
+    conexion_rpc = cls_dv_mercancia_c.conexion_rpc()
+
+    if conexion_rpc != False:
+        resultado = cls_dv_mercancia_c.devolucion_mercancia_c(conexion_rpc[0], conexion_rpc[1], result)
+        response_find = str(resultado).find('error') 
+        if response_find == -1:
+            raise fastapi.HTTPException(
+                status_code=200, detail=resultado
+            )
+        else:
+            raise fastapi.HTTPException(
+                status_code=400, detail=resultado
+            )
+
+    else:
+        matrix_errores['error_rpc'] = []
+        matrix_errores['error_rpc'].append({'code': 401, 'msg': f'Error en las credenciales RPC'})
+        raise fastapi.HTTPException(
+            status_code=401, detail=matrix_errores
+        )
+
+@router.post("/creacion_min_max") #, dependencies=[Depends(JWTBearer())])
+async def create_minmax_m(min_max_c: MinMaxBase):
+    result = min_max_c.dict()
+    matrix_errores = {}
+    matrix_errores['error_rpc'] = []
+
+    cls_min_max_c = maestro_transacciones(result['url_rpc'], result['db_rpc'], result['email_rpc'], result['token_rpc'])
+    conexion_rpc = cls_min_max_c.conexion_rpc()
+
+    if conexion_rpc != False:
+        resultado = cls_min_max_c.create_min_max(conexion_rpc[0], conexion_rpc[1], result)
+        response_find = str(resultado).find('error') 
+        if response_find == -1:
+            raise fastapi.HTTPException(
+                status_code=200, detail=resultado
+            )
+        else:
+            raise fastapi.HTTPException(
+                status_code=400, detail=resultado
+            )
+
+    else:
+        matrix_errores['error_rpc'] = []
+        matrix_errores['error_rpc'].append({'code': 401, 'msg': f'Error en las credenciales RPC'})
+        raise fastapi.HTTPException(
+            status_code=401, detail=matrix_errores
+        )
+
+@router.post("/creacion_proveedor_producto") #, dependencies=[Depends(JWTBearer())])
+async def create_proveedor_pro(proveedor_pro_c: SupplierProductBase):
+    result = proveedor_pro_c.dict()
+    matrix_errores = {}
+    matrix_errores['error_rpc'] = []
+
+    cls_proveedor_pro_c = maestro_transacciones(result['url_rpc'], result['db_rpc'], result['email_rpc'], result['token_rpc'])
+    conexion_rpc = cls_proveedor_pro_c.conexion_rpc()
+
+    if conexion_rpc != False:
+        resultado = cls_proveedor_pro_c.supplier_product(conexion_rpc[0], conexion_rpc[1], result)
+        response_find = str(resultado).find('error') 
+        if response_find == -1:
+            raise fastapi.HTTPException(
+                status_code=200, detail=resultado
+            )
+        else:
+            raise fastapi.HTTPException(
+                status_code=400, detail=resultado
+            )
+
+    else:
+        matrix_errores['error_rpc'] = []
         matrix_errores['error_rpc'].append({'code': 401, 'msg': f'Error en las credenciales RPC'})
         raise fastapi.HTTPException(
             status_code=401, detail=matrix_errores

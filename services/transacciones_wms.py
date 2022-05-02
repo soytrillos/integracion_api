@@ -27,21 +27,66 @@ class maestro_transacciones:
         return result
 
     def create_min_max(self, models, uid, datos):
-        print(datos)
-        result = models.execute_kw(self.db_rpc, uid, self.password_rpc,
-            'stock.warehouse.orderpoint', 'create', 
+        matriz_error = {}
+        matriz_error = []
+
+        producto_result = models.execute_kw(self.db_rpc, uid, self.password_rpc, 
+            'product.template', 'search_read', 
             [
-                {
-                    "product_id": int(datos["product_id"]),
-                    "location_id": int(datos["location_id"]),
-                    "product_min_qty": int(datos["product_min_qty"]),
-                    "product_max_qty": int(datos["product_max_qty"]),
-                    "qty_multiple": int(datos["qty_multiple"]),
-                    "product_uom_name": int(datos["product_uom_name"])
-                }
-            ]
+                [
+                    ['default_code', '=', datos['producto']]
+                ]
+            ], {'fields': ['id', 'name', 'default_code', 'uom_id', 'categ_id']}
         )
-        return result
+        if producto_result == []:
+            matriz_error.append({'error_producto': f'Producto {datos["producto"]} No existe'})
+        else:
+            consult_p = producto_result[0]
+            producto = consult_p['id']
+            unidad = consult_p['uom_id']
+
+            minmax_result = models.execute_kw(self.db_rpc, uid, self.password_rpc, 
+                'stock.warehouse.orderpoint', 'search_read', 
+                [
+                    [
+                        ['product_id', '=', producto]
+                    ]
+                ], {'fields': ['id', 'location_id', 'product_min_qty', 'product_max_qty', 'product_uom_name']}
+            )
+            if minmax_result == []:
+                result = models.execute_kw(self.db_rpc, uid, self.password_rpc,
+                    'stock.warehouse.orderpoint', 'create', 
+                    [
+                        {
+                            "product_id": producto,
+                            "location_id": 8,
+                            "product_min_qty": datos["product_min_qty"],
+                            "product_max_qty": datos["product_max_qty"],
+                            "qty_multiple": datos["qty_multiple"],
+                            "product_uom_name": unidad
+                        }
+                    ]
+                )
+                return f'Creado correctamente, id: {result}'
+            else:
+                result = models.execute_kw(self.db_rpc, uid, self.password_rpc,
+                    'stock.warehouse.orderpoint', 'write', 
+                    [[minmax_result[0]['id']],
+                        {
+                            "product_id": producto,
+                            "location_id": 8,
+                            "product_min_qty": datos["product_min_qty"],
+                            "product_max_qty": datos["product_max_qty"],
+                            "qty_multiple": datos["qty_multiple"],
+                            "product_uom_name": unidad
+                        }
+                    ]
+                )
+                return f'Actualizado correctamente, {result}'
+
+
+        if matriz_error != []:
+           return matriz_error
 
     def actualizar_cantidad(self, models, uid, datos):
         result = models.execute_kw(self.db_rpc, uid, self.password_rpc,
@@ -59,44 +104,92 @@ class maestro_transacciones:
         return result
 
     def supplier_product(self, models, uid, datos):
-        result = models.execute_kw(self.db_rpc, uid, self.password_rpc,
-            'product.supplierinfo', 'create', 
-            [
-                {
-                    "product_tmpl_id": int(datos["product_tmpl_id"]),
-                    "min_qty": int(datos["min_qty"]),
-                    "price": int(datos["price"]),
-                    "delay": int(datos["delay"]),
-                    "name": int(datos["name"])
-                }
-            ]
-        )
-        return result
+        matriz_error = {}
+        matriz_error = []
 
-    def transferencias_internas_s(self, models, uid, datos):
+        """
+            Validar producto
+        """
+        producto_result = models.execute_kw(self.db_rpc, uid, self.password_rpc, 
+            'product.template', 'search_read', 
+            [
+                [
+                    ['default_code', '=', datos['producto']]
+                ]
+            ], {'fields': ['id', 'name', 'default_code', 'uom_id', 'categ_id']}
+        )
+        if producto_result == []:
+            matriz_error.append({'error_producto': f'Producto {datos["producto"]} No existe'})
+        else:
+            consult_p = producto_result[0]
+            producto = consult_p['id']
+
+        """
+            Validacion contacto
+        """
+        contacto_resul = models.execute_kw(self.db_rpc, uid, self.password_rpc, 
+            'res.partner', 'search_read', 
+            [
+                [
+                    ['vat', '=', datos['proveedor']]
+                ]
+            ], {'fields': ['id', 'vat', 'name']}
+        )
+        if contacto_resul == []:
+            matriz_error.append({'error_contacto': f'Contacto {datos["proveedor"]} No existe'})
+        else:
+            contacto_resul = contacto_resul[0]
+            contacto = contacto_resul['id']
+
+        if matriz_error == []:
+            result = models.execute_kw(self.db_rpc, uid, self.password_rpc,
+                'product.supplierinfo', 'create', 
+                [
+                    {
+                        "product_tmpl_id": producto,
+                        "min_qty": datos["cantidad"],
+                        "price": datos["costo"],
+                        "delay": datos["plazo_entrega"],
+                        "name": contacto
+                    }
+                ]
+            )
+            return f'Proveedor Asignado correctamente, id: {result}'
+        else:
+            return matriz_error
+
+    def transferencias_internas_s(self, models, uid):
+        now = datetime.datetime.utcnow()
+        filtro = now - datetime.timedelta(days=3)
+        filtro = filtro.strftime('%Y-%m-%d')
+        print(filtro)
         datos_dict = {}
         cabecera = models.execute_kw(self.db_rpc, uid, self.password_rpc, 
             'stock.picking', 'search_read', 
             [
                 [
                     ['state', '=', 'done'],
-                    ['picking_type_id', '=', 5]
+                    ['picking_type_id', '=', 5],
+                    ['date_done', '>=', f"'{filtro}'"]
                 ]
-            ], {'fields': ['id', 'name', 'origin', 'state', 'partner_id', 'note', 'date_done', 'location_id', 'location_dest_id', 'picking_type_id']}
+            ], {'fields': ['id', 'name', 'origin', 'state', 'partner_id', 'note', 'date_done', 'location_id', 'location_dest_id', 'picking_type_id'], 'order': 'id ASC'}
         )
 
         for consult_c in cabecera:
             datos_dict[consult_c['name']] = []
             
-            partner = models.execute_kw(self.db_rpc, uid, self.password_rpc, 
-                'res.partner', 'search_read', 
-                [
+            if consult_c['partner_id'] != False:
+                partner = models.execute_kw(self.db_rpc, uid, self.password_rpc, 
+                    'res.partner', 'search_read', 
                     [
-                        ['id', '=', consult_c['partner_id'][0]]
-                    ]
-                ], {'fields': ['vat', 'name']}
-            )
-            partner = partner[0]['vat']
+                        [
+                            ['id', '=', consult_c['partner_id'][0]]
+                        ]
+                    ], {'fields': ['vat', 'name']}
+                )
+                partner = partner[0]['vat']
+            else:
+                partner = False
 
             location_source = models.execute_kw(self.db_rpc, uid, self.password_rpc, 
                 'stock.location', 'search_read', 
@@ -163,6 +256,7 @@ class maestro_transacciones:
 
     def transferencias_internas_c(self, models, uid, datos):
         matriz_error = {}
+        matriz_error = []
 
         """
             Validar documento
@@ -176,7 +270,7 @@ class maestro_transacciones:
             ], {'fields': ['id', 'name']}
         )
         if validacion_documento != []:
-            matriz_error = {'error_documento': f'Documento {datos["name"]} ya existe'}
+            matriz_error.append({'error_documento': f'Documento {datos["name"]} ya existe'})
 
         """
             Validacion contacto
@@ -190,7 +284,7 @@ class maestro_transacciones:
             ], {'fields': ['id', 'vat', 'name']}
         )
         if contacto == []:
-            matriz_error = {'error_contacto': f'Contacto {datos["partner_id"]} No existe'}
+            matriz_error.append({'error_contacto': f'Contacto {datos["partner_id"]} No existe'})
         else:
             contacto = contacto[0]['id']
 
@@ -206,7 +300,7 @@ class maestro_transacciones:
             ], {'fields': ['complete_name', 'name', 'display_name', 'comment']}
         )
         if location_source == []:
-            matriz_error = {'error_ubicacion_fuente': f'Ubicacion {datos["location_id"]} No existe'}
+            matriz_error.append({'error_ubicacion_fuente': f'Ubicacion {datos["location_id"]} No existe'})
         else:
             location_source = int(location_source[0]['id'])
 
@@ -219,7 +313,7 @@ class maestro_transacciones:
             ], {'fields': ['complete_name', 'name', 'display_name', 'comment']}
         )
         if location_dest == []:
-            matriz_error = {'error_ubicacion_destino': f'Ubicacion {datos["location_dest_id"]} No existe'}
+            matriz_error.append({'error_ubicacion_destino': f'Ubicacion {datos["location_dest_id"]} No existe'})
         else:
             location_dest = int(location_dest[0]['id'])
 
@@ -236,13 +330,13 @@ class maestro_transacciones:
                 ], {'fields': ['id', 'name', 'default_code', 'uom_id']}
             )
             if producto == []:
-                matriz_error = {'error_producto': f'Producto {prod["producto"]} No existe'}
+                matriz_error.append({'error_producto': f'Producto {prod["producto"]} No existe'})
             else:
                 consult_p = producto[0]
 
         
 
-        if matriz_error == {}:
+        if matriz_error == []:
             encabezado = models.execute_kw(self.db_rpc, uid, self.password_rpc, 
                 'stock.picking', 'create', 
                 [
@@ -277,7 +371,7 @@ class maestro_transacciones:
                         ], {'fields': ['id', 'name', 'default_code', 'uom_id']}
                     )
                     if producto == []:
-                        matriz_error = {'error_producto': f'Producto {datos["product_id"]} No existe'}
+                        matriz_error.append({'error_producto': f'Producto {datos["product_id"]} No existe'})
                     else:
                         consult_p = producto[0]
                         producto = consult_p['id']
@@ -301,20 +395,20 @@ class maestro_transacciones:
                         ]
                     )
                 except Exception as error:
-                    matriz_error = {'error_creando': f'Error al intentar crear documento {error}'}
+                    matriz_error.append({'error_creando': f'Error al intentar crear documento {error}'})
 
-            if matriz_error != {}:
+            if matriz_error != []:
                 eliminar_encabezado = models.execute_kw(self.db_rpc, uid, self.password_rpc, 
                     'stock.picking', 'unlink', 
                     [[encabezado]]
                 )
                 return matriz_error
             else:
-                return encabezado
+                return f'Creado correctamente, se debe terminar de aprobar en web id: {encabezado}'
         else:
             return matriz_error
 
-    def devolucion_mercancia_s(self, models, uid, datos):
+    def devolucion_mercancia_s(self, models, uid):
         """
             Localizaciones destino para devoluciones
                 - id: 5, Clientes - Customers
@@ -408,7 +502,13 @@ class maestro_transacciones:
         return datos_dict
 
     def devolucion_mercancia_c(self, models, uid, datos):
+        """
+            Localizaciones destino para devoluciones
+                - id: 5, Clientes - Customers
+                - id: 4, Proveedores - Vendors
+        """
         matriz_error = {}
+        matriz_error = []
 
         """
             Validar documento
@@ -422,7 +522,7 @@ class maestro_transacciones:
             ], {'fields': ['id', 'name']}
         )
         if validacion_documento != []:
-            matriz_error = {'error_documento': f'Documento {datos["name"]} ya existe'}
+            matriz_error.append({'error_documento': f'Documento {datos["name"]} ya existe'})
 
         """
             Validacion contacto
@@ -436,7 +536,7 @@ class maestro_transacciones:
             ], {'fields': ['id', 'vat', 'name']}
         )
         if contacto == []:
-            matriz_error = {'error_contacto': f'Contacto {datos["partner_id"]} No existe'}
+            matriz_error.append({'error_contacto': f'Contacto {datos["partner_id"]} No existe'})
         else:
             contacto = contacto[0]['id']
 
@@ -446,34 +546,12 @@ class maestro_transacciones:
 
         if datos['type_return'] == 'Cliente':
             location_source = 5
-            location_dest = models.execute_kw(self.db_rpc, uid, self.password_rpc, 
-                'stock.location', 'search_read', 
-                [
-                    [
-                        ['comment', 'like', f"%{datos['location_id']}%"]
-                    ]
-                ], {'fields': ['complete_name', 'name', 'display_name', 'comment']}
-            )
-            if location_dest == []:
-                matriz_error = {'error_ubicacion_fuente': f'Ubicacion {datos["location_id"]} No existe'}
-            else:
-                location_dest = int(location_dest[0]['id'])
+            location_dest = 8
         elif datos['type_return'] == 'Proveedor':
             location_dest = 4
-            location_source = models.execute_kw(self.db_rpc, uid, self.password_rpc, 
-                'stock.location', 'search_read', 
-                [
-                    [
-                        ['comment', 'like', f"%{datos['location_id']}%"]
-                    ]
-                ], {'fields': ['complete_name', 'name', 'display_name', 'comment']}
-            )
-            if location_source == []:
-                matriz_error = {'error_ubicacion_fuente': f'Ubicacion {datos["location_id"]} No existe'}
-            else:
-                location_source = int(location_source[0]['id'])
+            location_source = 8
         else:
-            matriz_error = {'error_tipo_devolucion': f"Solo se permiten devoluciones 'Cliente' o 'Proveedor', parametro {datos['type_return']} incorrecto"}
+            matriz_error.append({'error_tipo_devolucion': f"Solo se permiten devoluciones 'Cliente' o 'Proveedor', parametro {datos['type_return']} incorrecto"})
 
 
         """
@@ -489,13 +567,12 @@ class maestro_transacciones:
                 ], {'fields': ['id', 'name', 'default_code', 'uom_id']}
             )
             if producto == []:
-                matriz_error = {'error_producto': f'Producto {prod["producto"]} No existe'}
+                matriz_error.append({'error_producto': f'Producto {prod["producto"]} No existe'})
             else:
                 consult_p = producto[0]
 
         
-
-        if matriz_error == {}:
+        if matriz_error == []:
             encabezado = models.execute_kw(self.db_rpc, uid, self.password_rpc, 
                 'stock.picking', 'create', 
                 [
@@ -530,12 +607,12 @@ class maestro_transacciones:
                         ], {'fields': ['id', 'name', 'default_code', 'uom_id']}
                     )
                     if producto == []:
-                        matriz_error = {'error_producto': f'Producto {datos["product_id"]} No existe'}
+                        matriz_error.append({'error_producto': f'Producto {datos["product_id"]} No existe'})
                     else:
                         consult_p = producto[0]
                         producto = consult_p['id']
                         unidad = consult_p['uom_id'][0]
-                
+
                     detalle = models.execute_kw(self.db_rpc, uid, self.password_rpc, 
                         'stock.move.line', 'create', 
                         [
@@ -554,16 +631,16 @@ class maestro_transacciones:
                         ]
                     )
                 except Exception as error:
-                    matriz_error = {'error_creando': f'Error al intentar crear documento {error}'}
+                    matriz_error.append({'error_creando': f'Error al intentar crear documento {error}'})
 
-            if matriz_error != {}:
+            if matriz_error != []:
                 eliminar_encabezado = models.execute_kw(self.db_rpc, uid, self.password_rpc, 
                     'stock.picking', 'unlink', 
                     [[encabezado]]
                 )
                 return matriz_error
             else:
-                return encabezado
+                return f'Creado correctamente, se debe confirmar en la web, id: {encabezado}'
         else:
             return matriz_error
 

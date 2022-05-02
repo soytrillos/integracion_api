@@ -118,3 +118,38 @@ class VentasBase(RPCCredencialBase):
     partner_id: str
     date_order: str
     detalle: List[ItemsVentaBase]
+
+class DetalleItemBase(BaseModel):
+    producto: str
+    cantidad: float
+    lote: int
+
+class TransferenciaInternaBase(RPCCredencialBase):
+    name: str
+    origin: str
+    partner_id: str
+    location_id: str
+    location_dest_id: str
+    note: str
+    detalle: List[DetalleItemBase]
+
+class DevolucionBase(RPCCredencialBase):
+    name: str
+    origin: str
+    partner_id: str
+    type_return: str
+    note: str
+    detalle: List[DetalleItemBase]
+
+class MinMaxBase(RPCCredencialBase):
+    producto: str
+    product_min_qty: float
+    product_max_qty: float
+    qty_multiple: int
+
+class SupplierProductBase(RPCCredencialBase):
+    producto: str
+    cantidad: float
+    costo: float
+    plazo_entrega: int
+    proveedor: str
