@@ -25,6 +25,7 @@ class TokenResponse(BaseModel):
 
 class ProductosBase(BaseModel):
     default_code: str
+    ruta: List
     barcode: str
     name: str
     categoria: str

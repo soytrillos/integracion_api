@@ -102,6 +102,67 @@ class maestra_productos:
         else:
             matrix_result['resultado'].append({'error_impuesto': f'El impuesto {datos["iva_venta"]}, no existe'})
 
+        """
+            Validacion rutas producto
+        """
+        array_ruta = []
+        for ruta in datos["ruta"]:
+            if ruta == 'Comprar':
+                s_ruta = models.execute_kw(self.db_rpc, uid, self.password_rpc, 
+                    'stock.location.route', 'search_read', 
+                    [
+                        [
+                            ['name', '=', 'Buy']
+                        ]
+                    ], {'fields': ['id']}
+                )
+                s_ruta = s_ruta[0]['id']
+                array_ruta.append(s_ruta)
+            elif ruta == 'Fabricar':
+                s_ruta = models.execute_kw(self.db_rpc, uid, self.password_rpc, 
+                    'stock.location.route', 'search_read', 
+                    [
+                        [
+                            ['name', '=', 'Manufacture']
+                        ]
+                    ], {'fields': ['id']}
+                )
+                if s_ruta == []:
+                    matrix_result['resultado'].append({'error_ruta': f'Error en la ruta Fabricar, no esta habilitada'})
+                else:
+                    s_ruta = s_ruta[0]['id']
+                    array_ruta.append(s_ruta)
+            elif ruta == 'MTO':
+                s_ruta = models.execute_kw(self.db_rpc, uid, self.password_rpc, 
+                    'stock.location.route', 'search_read', 
+                    [
+                        [
+                            ['name', '=', 'Replenish on Order (MTO)']
+                        ]
+                    ], {'fields': ['id']}
+                )
+                if s_ruta == []:
+                    matrix_result['resultado'].append({'error_ruta': f'Error en la ruta MTO, no esta habilitada'})
+                else:
+                    s_ruta = s_ruta[0]['id']
+                    array_ruta.append(s_ruta)
+            elif ruta == 'Subcontratista':
+                s_ruta = models.execute_kw(self.db_rpc, uid, self.password_rpc, 
+                    'stock.location.route', 'search_read', 
+                    [
+                        [
+                            ['name', '=', 'Resupply Subcontractor on Order']
+                        ]
+                    ], {'fields': ['id']}
+                )
+                if s_ruta == []:
+                    matrix_result['resultado'].append({'error_ruta': f'Error en la ruta Subcontratista, no esta habilitada'})
+                else:
+                    s_ruta = s_ruta[0]['id']
+                    array_ruta.append(s_ruta)
+            else:
+                rutas_posibles = ['Comprar', 'Fabricar', 'MTO', 'Subcontratista']
+                matrix_result['resultado'].append({'error_ruta': f'Error en la ruta {datos["ruta"]}, no existe', 'posibles_rutas': rutas_posibles})
 
         if matrix_result == {'resultado': []}:
             try:
@@ -111,6 +172,7 @@ class maestra_productos:
                         [
                             {
                                 "default_code": str(datos["default_code"]),
+                                "route_ids": array_ruta,
                                 "barcode": str(datos["barcode"]),
                                 "name": str(datos["name"]),
                                 "categ_id": int(s_categoria),
@@ -139,6 +201,7 @@ class maestra_productos:
                         [
                             {
                                 "default_code": str(datos["default_code"]),
+                                "route_ids": array_ruta,
                                 "barcode": str(datos["barcode"]),
                                 "name": str(datos["name"]),
                                 "categ_id": int(s_categoria),
@@ -164,7 +227,7 @@ class maestra_productos:
 
     def actualizar_producto(self, models, uid, datos, id_product):
         matrix_result = {}
-        matrix_result[f'{datos["default_code"]}'] = []
+        matrix_result['resultado'] = []
         """
             Validacion y creacion de la categoria
         """
@@ -200,7 +263,7 @@ class maestra_productos:
             ], {'fields': ['id']}
         )
         if s_unidad == []:
-            matrix_result[f'{datos["default_code"]}'].append({'error_unidad': f'La unidad de medida: {datos["unidad_venta"]}, no existe'})
+            matrix_result['resultado'].append({'error_unidad': f'La unidad de medida: {datos["unidad_venta"]}, no existe'})
         else:
             s_unidad = s_unidad[0]['id']
 
@@ -220,7 +283,7 @@ class maestra_productos:
         if s_impuesto_sale != []:
             s_impuesto_sale = s_impuesto_sale[0]['id']
         else:
-            matrix_result[f'{datos["default_code"]}'].append({'error_impuesto': f'El impuesto {datos["iva_venta"]} para ventas, no existe'})
+            matrix_result['resultado'].append({'error_impuesto': f'El impuesto {datos["iva_venta"]} para ventas, no existe'})
         
         s_impuesto_purchase = models.execute_kw(self.db_rpc, uid, self.password_rpc, 
             'account.tax', 'search_read', 
@@ -235,9 +298,71 @@ class maestra_productos:
         if s_impuesto_purchase != []:
             s_impuesto_purchase = s_impuesto_purchase[0]['id']
         else:
-            matrix_result[f'{datos["default_code"]}'].append({'error_impuesto': f'El impuesto {datos["iva_venta"]} para compras, no existe'})
+            matrix_result['resultado'].append({'error_impuesto': f'El impuesto {datos["iva_venta"]} para compras, no existe'})
+
+        """
+            Validacion rutas producto
+        """
+        array_ruta = []
+        for ruta in datos["ruta"]:
+            if ruta == 'Comprar':
+                s_ruta = models.execute_kw(self.db_rpc, uid, self.password_rpc, 
+                    'stock.location.route', 'search_read', 
+                    [
+                        [
+                            ['name', '=', 'Buy']
+                        ]
+                    ], {'fields': ['id']}
+                )
+                s_ruta = s_ruta[0]['id']
+                array_ruta.append(s_ruta)
+            elif ruta == 'Fabricar':
+                s_ruta = models.execute_kw(self.db_rpc, uid, self.password_rpc, 
+                    'stock.location.route', 'search_read', 
+                    [
+                        [
+                            ['name', '=', 'Manufacture']
+                        ]
+                    ], {'fields': ['id']}
+                )
+                if s_ruta == []:
+                    matrix_result['resultado'].append({'error_ruta': f'Error en la ruta Fabricar, no esta habilitada'})
+                else:
+                    s_ruta = s_ruta[0]['id']
+                    array_ruta.append(s_ruta)
+            elif ruta == 'MTO':
+                s_ruta = models.execute_kw(self.db_rpc, uid, self.password_rpc, 
+                    'stock.location.route', 'search_read', 
+                    [
+                        [
+                            ['name', '=', 'Replenish on Order (MTO)']
+                        ]
+                    ], {'fields': ['id']}
+                )
+                if s_ruta == []:
+                    matrix_result['resultado'].append({'error_ruta': f'Error en la ruta MTO, no esta habilitada'})
+                else:
+                    s_ruta = s_ruta[0]['id']
+                    array_ruta.append(s_ruta)
+            elif ruta == 'Subcontratista':
+                s_ruta = models.execute_kw(self.db_rpc, uid, self.password_rpc, 
+                    'stock.location.route', 'search_read', 
+                    [
+                        [
+                            ['name', '=', 'Resupply Subcontractor on Order']
+                        ]
+                    ], {'fields': ['id']}
+                )
+                if s_ruta == []:
+                    matrix_result['resultado'].append({'error_ruta': f'Error en la ruta Subcontratista, no esta habilitada'})
+                else:
+                    s_ruta = s_ruta[0]['id']
+                    array_ruta.append(s_ruta)
+            else:
+                rutas_posibles = [{'Comprar', 'Fabricar', 'MTO', 'Subcontratista'}]
+                matrix_result['resultado'].append({'error_ruta': f'Error en la ruta {datos["ruta"]}, no existe', 'posibles_rutas': rutas_posibles})
         
-        if matrix_result == {f'{datos["default_code"]}': []}:
+        if matrix_result == {'resultado': []}:
             try:
                 if datos["vence"] > 0:
                     result = models.execute_kw(self.db_rpc, uid, self.password_rpc, 
@@ -246,6 +371,7 @@ class maestra_productos:
                             [id_product], 
                             {
                                 "default_code": str(datos["default_code"]),
+                                "route_ids": array_ruta,
                                 "barcode": str(datos["barcode"]),
                                 "name": str(datos["name"]),
                                 "categ_id": int(s_categoria),
@@ -274,6 +400,7 @@ class maestra_productos:
                             [id_product], 
                             {
                                 "default_code": str(datos["default_code"]),
+                                "route_ids": array_ruta,
                                 "barcode": str(datos["barcode"]),
                                 "name": str(datos["name"]),
                                 "categ_id": int(s_categoria),
@@ -290,7 +417,7 @@ class maestra_productos:
                             }
                         ]
                     )
-                matrix_result[f'{datos["default_code"]}'].append({'cod_producto': f'{id_product} - {datos["name"]}', 'actualizado': result})
+                matrix_result['resultado'].append({'cod_producto': f'{id_product} - {datos["name"]}', 'actualizado': result})
             except Exception as error:
                 print(f'Error: {error.args}')
         return matrix_result
