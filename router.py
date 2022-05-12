@@ -209,7 +209,9 @@ async def search_compra(compras: RPCCredencialBase):
                     'name': en_compra['name'], 
                     'partner_id': cliente[0]['vat'], 
                     'partner_ref': en_compra['partner_ref'], 
-                    'date_approve': en_compra['date_approve']
+                    'date_approve': en_compra['date_approve'],
+                    'almacen': en_compra['picking_type_id'],
+                    'compañia': en_compra['company_id']
                 }
             detalle = cls_compra.purchase_order_line_s(conexion_rpc[0], conexion_rpc[1], en_compra['id'])
             compras_dict[en_compra["name"]]['detalle'] = []
@@ -330,7 +332,9 @@ async def search_venta(ventas: RPCCredencialBase):
                     'id': en_venta['id'], 
                     'name': en_venta['name'], 
                     'partner_id': cliente[0]['vat'],
-                    'date_order': en_venta['date_order']
+                    'date_order': en_venta['date_order'],
+                    'almacen': en_venta['warehouse_id'],
+                    'compañia': en_venta['company_id']
                 }
             detalle = cls_venta.sale_order_line_s(conexion_rpc[0], conexion_rpc[1], en_venta['id'])
             ventas_dict[f'{en_venta["name"]}']['detalle'] = []

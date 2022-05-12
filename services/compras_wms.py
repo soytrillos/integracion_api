@@ -70,7 +70,7 @@ class maestro_compras:
                     ['invoice_status', '=', 'to invoice'],
                     ['effective_date', '>=', filtro]
                 ]
-            ], {'fields': ['id', 'name', 'partner_id', 'partner_ref', 'date_approve', 'incoming_picking_count'], 'order': 'id ASC'}
+            ], {'fields': ['id', 'name', 'partner_id', 'partner_ref', 'date_approve', 'incoming_picking_count', 'picking_type_id', 'company_id'], 'order': 'id ASC'}
         )        
         return result
 
@@ -82,7 +82,7 @@ class maestro_compras:
                     ['order_id', '=', order_id],
                     ['state', '=', 'purchase']
                 ]
-            ], {'fields': ['order_id', 'product_id', 'product_qty', 'qty_received', 'taxes_id', 'price_unit']}
+            ], {'fields': ['order_id', 'product_id', 'product_qty', 'qty_received', 'taxes_id', 'price_unit', 'company_id']}
         )        
         return result
     

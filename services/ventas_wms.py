@@ -61,7 +61,7 @@ class maestro_ventas:
                     ['invoice_status', '=', 'to invoice'],
                     ['date_order', '>=', '2022-04-24']
                 ]
-            ], {'fields': ['id', 'name', 'partner_id', 'date_order', 'delivery_count'], 'order': 'id ASC'}
+            ], {'fields': ['id', 'name', 'partner_id', 'date_order', 'delivery_count', 'company_id', 'warehouse_id'], 'order': 'id ASC'}
         )        
         return result
 
