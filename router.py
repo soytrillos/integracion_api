@@ -198,7 +198,7 @@ async def search_compra(compras: RPCCredencialBase):
     
     cls_compra = maestro_compras(result['url_rpc'], result['db_rpc'], result['email_rpc'], result['token_rpc'])
     conexion_rpc = cls_compra.conexion_rpc()
-    if conexion_rpc != False:
+    if conexion_rpc[1] != False:
         encabezado = cls_compra.purchase_order_s(conexion_rpc[0], conexion_rpc[1])
         compras_dict = {}
         for en_compra in encabezado:
@@ -210,8 +210,8 @@ async def search_compra(compras: RPCCredencialBase):
                     'partner_id': cliente[0]['vat'], 
                     'partner_ref': en_compra['partner_ref'], 
                     'date_approve': en_compra['date_approve'],
-                    'almacen': en_compra['picking_type_id'],
-                    'compañia': en_compra['company_id']
+                    'almacen': en_compra['picking_type_id'][1],
+                    'compañia': en_compra['company_id'][1]
                 }
             detalle = cls_compra.purchase_order_line_s(conexion_rpc[0], conexion_rpc[1], en_compra['id'])
             compras_dict[en_compra["name"]]['detalle'] = []
@@ -248,7 +248,7 @@ async def create_compra(compra: ComprasBase):
     cls_compra = maestro_compras(result['url_rpc'], result['db_rpc'], result['email_rpc'], result['token_rpc'])
     conexion_rpc = cls_compra.conexion_rpc()
     
-    if conexion_rpc != False:
+    if conexion_rpc[1] != False:
         matrix_errores['error_maestras'] = []
         try:
             x_cl = maestra_clientes(result['url_rpc'], result['db_rpc'], result['email_rpc'], result['token_rpc'])
@@ -322,7 +322,7 @@ async def search_venta(ventas: RPCCredencialBase):
     cls_venta = maestro_ventas(result['url_rpc'], result['db_rpc'], result['email_rpc'], result['token_rpc'])
     conexion_rpc = cls_venta.conexion_rpc()
 
-    if conexion_rpc != False:
+    if conexion_rpc[1] != False:
         ventas_dict = {}
         encabezado = cls_venta.sale_order_s(conexion_rpc[0], conexion_rpc[1])
         for en_venta in encabezado:
@@ -333,8 +333,8 @@ async def search_venta(ventas: RPCCredencialBase):
                     'name': en_venta['name'], 
                     'partner_id': cliente[0]['vat'],
                     'date_order': en_venta['date_order'],
-                    'almacen': en_venta['warehouse_id'],
-                    'compañia': en_venta['company_id']
+                    'almacen': en_venta['warehouse_id'][1],
+                    'compañia': en_venta['company_id'][1]
                 }
             detalle = cls_venta.sale_order_line_s(conexion_rpc[0], conexion_rpc[1], en_venta['id'])
             ventas_dict[f'{en_venta["name"]}']['detalle'] = []
@@ -374,7 +374,7 @@ async def create_venta(venta: VentasBase):
     cls_venta = maestro_ventas(result['url_rpc'], result['db_rpc'], result['email_rpc'], result['token_rpc'])
     conexion_rpc = cls_venta.conexion_rpc()
 
-    if conexion_rpc != False:
+    if conexion_rpc[1] != False:
         matrix_errores['error_maestras'] = []
         try:
             x_cl = maestra_clientes(result['url_rpc'], result['db_rpc'], result['email_rpc'], result['token_rpc'])
@@ -449,7 +449,7 @@ async def search_tr_interna_s(tr_interna_s: RPCCredencialBase):
     cls_tr_interno_c = maestro_transacciones(result['url_rpc'], result['db_rpc'], result['email_rpc'], result['token_rpc'])
     conexion_rpc = cls_tr_interno_c.conexion_rpc()
 
-    if conexion_rpc != False:
+    if conexion_rpc[1] != False:
         resultado = cls_tr_interno_c.transferencias_internas_s(conexion_rpc[0], conexion_rpc[1])
         raise fastapi.HTTPException(
             status_code=200, detail=resultado
@@ -471,7 +471,7 @@ async def create_tr_interna_c(tr_interna_c: TransferenciaInternaBase):
     cls_tr_interno_c = maestro_transacciones(result['url_rpc'], result['db_rpc'], result['email_rpc'], result['token_rpc'])
     conexion_rpc = cls_tr_interno_c.conexion_rpc()
 
-    if conexion_rpc != False:
+    if conexion_rpc[1] != False:
         resultado = cls_tr_interno_c.transferencias_internas_c(conexion_rpc[0], conexion_rpc[1], result)
         response_find = str(resultado).find('error') 
         if response_find == -1:
@@ -499,7 +499,7 @@ async def consulta_devolucion_m(dv_mercancia: RPCCredencialBase):
     cls_dv_mercancia_s = maestro_transacciones(result['url_rpc'], result['db_rpc'], result['email_rpc'], result['token_rpc'])
     conexion_rpc = cls_dv_mercancia_s.conexion_rpc()
 
-    if conexion_rpc != False:
+    if conexion_rpc[1] != False:
         resultado = cls_dv_mercancia_s.devolucion_mercancia_s(conexion_rpc[0], conexion_rpc[1])
         response_find = str(resultado).find('error') 
         if response_find == -1:
@@ -527,7 +527,7 @@ async def create_devolucion_m(dv_mercancia_c: DevolucionBase):
     cls_dv_mercancia_c = maestro_transacciones(result['url_rpc'], result['db_rpc'], result['email_rpc'], result['token_rpc'])
     conexion_rpc = cls_dv_mercancia_c.conexion_rpc()
 
-    if conexion_rpc != False:
+    if conexion_rpc[1] != False:
         resultado = cls_dv_mercancia_c.devolucion_mercancia_c(conexion_rpc[0], conexion_rpc[1], result)
         response_find = str(resultado).find('error') 
         if response_find == -1:
@@ -555,7 +555,7 @@ async def create_minmax_m(min_max_c: MinMaxBase):
     cls_min_max_c = maestro_transacciones(result['url_rpc'], result['db_rpc'], result['email_rpc'], result['token_rpc'])
     conexion_rpc = cls_min_max_c.conexion_rpc()
 
-    if conexion_rpc != False:
+    if conexion_rpc[1] != False:
         resultado = cls_min_max_c.create_min_max(conexion_rpc[0], conexion_rpc[1], result)
         response_find = str(resultado).find('error') 
         if response_find == -1:
@@ -583,7 +583,7 @@ async def create_proveedor_pro(proveedor_pro_c: SupplierProductBase):
     cls_proveedor_pro_c = maestro_transacciones(result['url_rpc'], result['db_rpc'], result['email_rpc'], result['token_rpc'])
     conexion_rpc = cls_proveedor_pro_c.conexion_rpc()
 
-    if conexion_rpc != False:
+    if conexion_rpc[1] != False:
         resultado = cls_proveedor_pro_c.supplier_product(conexion_rpc[0], conexion_rpc[1], result)
         response_find = str(resultado).find('error') 
         if response_find == -1:
