@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends
 import fastapi
-from schema import RequestSchema, ResponseSchema, TokenResponse, RPCProductosBase, RPCClientesBase, RPCProveedoresBase, RPCCredencialBase, ComprasBase, VentasBase, TransferenciaInternaBase, DevolucionBase, MinMaxBase, SupplierProductBase
+from schema import RequestSchema, ResponseSchema, TokenResponse, RPCProductosBase, RPCClientesBase, RPCProveedoresBase, RPCCredencialBase, ComprasBase, VentasBase, TransferenciaInternaBase, DevolucionBase, MinMaxBase, SupplierProductBase, AjusteInventarioBase
 from sqlalchemy.orm import Session
 from config import get_db, ACCESS_TOKEN_EXPIRE_MINUTES
 from passlib.context import CryptContext
@@ -601,3 +601,24 @@ async def create_proveedor_pro(proveedor_pro_c: SupplierProductBase):
         raise fastapi.HTTPException(
             status_code=401, detail=matrix_errores
         )
+        
+@router.post("/ajuste_inventario")
+async def create_aj_inv(ajuste_schema: AjusteInventarioBase):
+    result = ajuste_schema.dict()
+    matrix_errores = {}
+    matrix_errores['error_rpc'] = []
+    
+    cls_ajuste_c = maestro_transacciones(result['url_rpc'], result['db_rpc'], result['email_rpc'], result['token_rpc'])
+    conexion_rpc = cls_ajuste_c.conexion_rpc()
+    
+    if conexion_rpc[1] != False:
+        resultado = cls_ajuste_c.ajuste_inventario_v1_c(conexion_rpc[0], conexion_rpc[1], result)
+        response_find = str(resultado).find('error') 
+        if response_find == -1:
+            raise fastapi.HTTPException(
+                status_code=200, detail=resultado
+            )
+        else:
+            raise fastapi.HTTPException(
+                status_code=400, detail=resultado
+            )

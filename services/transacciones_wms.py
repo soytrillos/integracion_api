@@ -765,3 +765,99 @@ class maestro_transacciones:
             return f'Creado correctamente {ajuste}'
         else:
             return matriz_error
+    
+    def ajuste_inventario_v1_c(self, models, uid, datos):
+        matriz_error = {}
+
+        """
+            Validacion producto
+        """
+        producto_result = models.execute_kw(self.db_rpc, uid, self.password_rpc, 
+            'product.product', 'search_read', 
+            [
+                [
+                    ['default_code', '=', datos['product_id']]
+                ]
+            ], {'fields': ['id', 'name', 'default_code', 'uom_id']}
+        )
+        if producto_result != []:
+            producto_result = producto_result[0]
+            producto = producto_result['id']
+        else:
+            matriz_error = {'error_producto': f'El producto {datos["product_id"]}'}
+
+        """
+            Validacion localizacion
+        """
+        location_id = models.execute_kw(self.db_rpc, uid, self.password_rpc, 
+            'stock.location', 'search_read', 
+            [
+                [
+                    ['comment', 'like', f"%{datos['location_id']}%"]
+                ]
+            ], {'fields': ['complete_name', 'name', 'display_name', 'comment']}
+        )
+        location_id = location_id[0]['id']
+        
+
+        """
+            Validacion inventario de producto y localizacion
+        """
+        ajustes = models.execute_kw(self.db_rpc, uid, self.password_rpc, 
+            'stock.quant', 'search_read', 
+            [
+                [
+                    ['product_id', '=', producto],
+                    ['location_id', '=', location_id]
+                ]
+            ], {'fields': ['id']}
+        )
+        if ajustes == []:
+            ajuste = 0
+        else:
+            ajuste = ajustes[0]['id']
+
+            
+        """
+            Validacion lote
+        """
+        lote_result = models.execute_kw(self.db_rpc, uid, self.password_rpc, 
+            'stock.production.lot', 'create', 
+            [
+                {
+                    'company_id': 1,
+                    'name': datos['lot_id'], 
+                    'product_id': producto
+                }
+            ]
+        )
+        
+        if matriz_error == {} and ajuste != 0:
+            ajuste = models.execute_kw(self.db_rpc, uid, self.password_rpc, 
+                'stock.quant', 'write', 
+                [
+                    [ajuste],
+                    {
+                        'product_id': producto,
+                        'location_id': location_id,
+                        'lot_id': lote_result,
+                        'quantity': datos['quantity']
+                    }
+                ]
+            )
+            return f'Actualizado correctamente {ajuste}'
+        elif matriz_error == {} and ajuste == 0:
+            ajuste = models.execute_kw(self.db_rpc, uid, self.password_rpc, 
+                'stock.quant', 'create', 
+                [
+                    {
+                        'product_id': producto,
+                        'location_id': location_id,
+                        'lot_id': lote_result,
+                        'quantity': datos['quantity']
+                    }
+                ]
+            )
+            return f'Creado correctamente {ajuste}'
+        else:
+            return matriz_error

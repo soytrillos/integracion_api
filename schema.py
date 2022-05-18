@@ -154,3 +154,9 @@ class SupplierProductBase(RPCCredencialBase):
     costo: float
     plazo_entrega: int
     proveedor: str
+
+class AjusteInventarioBase(RPCCredencialBase):
+    product_id: str
+    location_id: str
+    lot_id: str
+    quantity: float
