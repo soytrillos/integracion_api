@@ -210,7 +210,7 @@ async def search_compra(compras: RPCCredencialBase):
                     'partner_id': cliente[0]['vat'], 
                     'partner_ref': en_compra['partner_ref'], 
                     'date_approve': en_compra['date_approve'],
-                    'almacen': en_compra['picking_type_id'][1],
+                    'almacen': en_compra['picking_type_id'][1].replace(': Receipts', ''),
                     'compañia': en_compra['company_id'][1]
                 }
             detalle = cls_compra.purchase_order_line_s(conexion_rpc[0], conexion_rpc[1], en_compra['id'])
