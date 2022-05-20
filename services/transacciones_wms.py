@@ -422,7 +422,7 @@ class maestro_transacciones:
                     ['state', '=', 'done'],
                     ['picking_type_id', '=', 6]
                 ]
-            ], {'fields': ['id', 'name', 'origin', 'state', 'partner_id', 'note', 'date_done', 'location_id', 'location_dest_id', 'picking_type_id']}
+            ], {'fields': ['id', 'name', 'company_id', 'origin', 'state', 'partner_id', 'note', 'date_done', 'location_id', 'location_dest_id', 'picking_type_id']}
         )
 
         for consult_c in cabecera:
@@ -465,8 +465,10 @@ class maestro_transacciones:
                 'state': consult_c['state'],
                 'partner_id': partner,
                 'date_done': consult_c['date_done'],
-                'location_source': location_source,
-                'location_dest': location_dest,
+                'compañia': consult_c['company_id'][1],
+                'almacen': consult_c['picking_type_id'][1].replace(': Devoluciones', ''),
+                #'location_source': location_source,
+                #'location_dest': location_dest,
                 'observation': str(consult_c['note']).replace('<p>', '').replace('</p>', '')
             }
 
@@ -482,20 +484,34 @@ class maestro_transacciones:
             )
 
             for consult_d in detalle:
-                producto = models.execute_kw(self.db_rpc, uid, self.password_rpc, 
+                producto_rs = models.execute_kw(self.db_rpc, uid, self.password_rpc, 
                     'product.template', 'search_read', 
                     [
                         [
                             ['id', '=', consult_d['product_id'][0]]
                         ]
-                    ], {'fields': ['id', 'name', 'default_code']}
+                    ], {'fields': ['id', 'name', 'default_code', 'list_price', 'taxes_id']}
                 )
-                producto = producto[0]['default_code']
+                result_p = producto_rs[0]
+                producto = result_p['default_code']
+                precio = result_p['list_price']
+                iva = result_p['taxes_id']
+                
+                impuesto = models.execute_kw(self.db_rpc, uid, self.password_rpc,
+                    'account.tax', 'search_read',
+                    [
+                        [
+                            ['id', '=', iva]
+                        ]
+                    ], {'fields': ['id', 'amount']}
+                )
+                iva = impuesto[0]['amount']
 
                 datos_dict[consult_c['name']]['detalle'].append({
                     'product_id': producto,
-                    'qty_done': consult_d['qty_done'],
-                    'lot_id': consult_d['lot_id'],
+                    'product_qty': consult_d['qty_done'],
+                    'taxes_id': iva,
+                    'price_unit': precio,
                     'lot_name': consult_d['lot_name']
                 })
 
@@ -778,11 +794,12 @@ class maestro_transacciones:
                 [
                     ['default_code', '=', datos['product_id']]
                 ]
-            ], {'fields': ['id', 'name', 'default_code', 'uom_id']}
+            ], {'fields': ['id', 'name', 'default_code', 'uom_id', 'tracking']}
         )
         if producto_result != []:
             producto_result = producto_result[0]
             producto = producto_result['id']
+            ind_lote = producto_result['tracking']
         else:
             matriz_error = {'error_producto': f'El producto {datos["product_id"]}'}
 
@@ -821,16 +838,33 @@ class maestro_transacciones:
         """
             Validacion lote
         """
-        lote_result = models.execute_kw(self.db_rpc, uid, self.password_rpc, 
-            'stock.production.lot', 'create', 
-            [
-                {
-                    'company_id': 1,
-                    'name': datos['lot_id'], 
-                    'product_id': producto
-                }
-            ]
-        )
+        print(ind_lote)
+        if ind_lote == 'none':
+            lote = ''
+        else:
+            lote_result = models.execute_kw(self.db_rpc, uid, self.password_rpc, 
+                'stock.production.lot', 'search_read', 
+                [
+                    [
+                        ['company_id', '=', 1],
+                        ['name', '=', datos['lot_id']], 
+                        ['product_id', '=', producto]
+                    ]
+                ], {'fields': ['id']}
+            )
+            if lote_result == []:
+                lote = models.execute_kw(self.db_rpc, uid, self.password_rpc, 
+                    'stock.production.lot', 'create', 
+                    [
+                        {
+                            'company_id': 1,
+                            'name': datos['lot_id'], 
+                            'product_id': producto
+                        }
+                    ]
+                )
+            else:
+                lote = lote_result[0]['id']
         
         if matriz_error == {} and ajuste != 0:
             ajuste = models.execute_kw(self.db_rpc, uid, self.password_rpc, 
@@ -840,12 +874,12 @@ class maestro_transacciones:
                     {
                         'product_id': producto,
                         'location_id': location_id,
-                        'lot_id': lote_result,
+                        'lot_id': lote,
                         'quantity': datos['quantity']
                     }
                 ]
             )
-            return f'Actualizado correctamente {ajuste}'
+            return f'Actualizado correctamente: {producto}, Estado: {ajuste}'
         elif matriz_error == {} and ajuste == 0:
             ajuste = models.execute_kw(self.db_rpc, uid, self.password_rpc, 
                 'stock.quant', 'create', 
@@ -853,11 +887,11 @@ class maestro_transacciones:
                     {
                         'product_id': producto,
                         'location_id': location_id,
-                        'lot_id': lote_result,
+                        'lot_id': lote,
                         'quantity': datos['quantity']
                     }
                 ]
             )
-            return f'Creado correctamente {ajuste}'
+            return f'Creado correctamente: {producto}, Id: {ajuste}'
         else:
             return matriz_error
