@@ -295,7 +295,7 @@ class maestro_transacciones:
             'stock.location', 'search_read', 
             [
                 [
-                    ['comment', 'like', f"%{datos['location_id']}%"]
+                    ['name', 'like', f"%{datos['location_id']}%"]
                 ]
             ], {'fields': ['complete_name', 'name', 'display_name', 'comment']}
         )
@@ -308,7 +308,7 @@ class maestro_transacciones:
             'stock.location', 'search_read', 
             [
                 [
-                    ['comment', 'like', f"%{datos['location_dest_id']}%"]
+                    ['name', 'like', f"%{datos['location_dest_id']}%"]
                 ]
             ], {'fields': ['complete_name', 'name', 'display_name', 'comment']}
         )
@@ -738,7 +738,7 @@ class maestro_transacciones:
             'stock.location', 'search_read', 
             [
                 [
-                    ['comment', 'like', f"%{datos['location_id']}%"]
+                    ['name', 'like', f"%{datos['location_id']}%"]
                 ]
             ], {'fields': ['complete_name', 'name', 'display_name', 'comment']}
         )
@@ -810,7 +810,7 @@ class maestro_transacciones:
             'stock.location', 'search_read', 
             [
                 [
-                    ['comment', 'like', f"%{datos['location_id']}%"]
+                    ['name', 'like', f"%{datos['location_id']}%"]
                 ]
             ], {'fields': ['complete_name', 'name', 'display_name', 'comment']}
         )
