@@ -7,3 +7,5 @@ python-jose
 bcrypt
 datasets
 dataset
+python-multipart
+pillow
