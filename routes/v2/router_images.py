@@ -51,7 +51,7 @@ async def files_m(empresa: str = Form(...), imagenes: List[UploadFile] = File(..
 @router.get("/search_images/{empresa}/{imagen}", tags=["Carga Datos"])
 async def s_images(empresa: str, imagen: str):
     busqueda = os.path.isfile(fr"{os.getcwd()}\server\images\{empresa}\{imagen}")
-    file_img = fr"{os.getcwd()}\server\\images\{empresa}\{imagen}"
+    file_img = fr"{os.getcwd()}\server\images\{empresa}\{imagen}"
     if busqueda == True:
         return FileResponse(path=file_img)
     else:
