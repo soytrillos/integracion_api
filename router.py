@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, File, UploadFile
 import fastapi
 from schema import RequestSchema, ResponseSchema, TokenResponse, RPCProductosBase, RPCClientesBase, RPCProveedoresBase, RPCCredencialBase, ComprasBase, VentasBase, TransferenciaInternaBase, DevolucionBase, MinMaxBase, SupplierProductBase, AjusteInventarioBase
 from sqlalchemy.orm import Session
