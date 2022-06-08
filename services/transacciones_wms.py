@@ -368,7 +368,7 @@ class maestro_transacciones:
                             [
                                 ['default_code', '=', datos_d['producto']]
                             ]
-                        ], {'fields': ['id', 'name', 'default_code', 'uom_id']}
+                        ], {'fields': ['id', 'name', 'default_code', 'uom_id', 'tracking']}
                     )
                     if producto == []:
                         matriz_error.append({'error_producto': f'Producto {datos["product_id"]} No existe'})
@@ -376,6 +376,37 @@ class maestro_transacciones:
                         consult_p = producto[0]
                         producto = consult_p['id']
                         unidad = consult_p['uom_id'][0]
+                        ind_lote = consult_p['tracking']
+
+                    """
+                        Validacion lote
+                    """
+                    if ind_lote == 'none':
+                        lote = ''
+                    else:
+                        lote_result = models.execute_kw(self.db_rpc, uid, self.password_rpc, 
+                            'stock.production.lot', 'search_read', 
+                            [
+                                [
+                                    ['company_id', '=', 1],
+                                    ['name', '=', datos_d['lote']], 
+                                    ['product_id', '=', producto]
+                                ]
+                            ], {'fields': ['id']}
+                        )
+                        if lote_result == []:
+                            lote = models.execute_kw(self.db_rpc, uid, self.password_rpc, 
+                                'stock.production.lot', 'create', 
+                                [
+                                    {
+                                        'company_id': 1,
+                                        'name': datos_d['lote'], 
+                                        'product_id': producto
+                                    }
+                                ]
+                            )
+                        else:
+                            lote = lote_result[0]['id']
                 
                     detalle = models.execute_kw(self.db_rpc, uid, self.password_rpc, 
                         'stock.move.line', 'create', 
@@ -390,6 +421,7 @@ class maestro_transacciones:
                                 "location_dest_id": location_dest,
                                 "product_uom_id": unidad,
                                 "qty_done": datos_d['cantidad'],
+                                "lote_id": lote,
                                 "picking_code": 5
                             }
                         ]

@@ -123,7 +123,7 @@ class VentasBase(RPCCredencialBase):
 class DetalleItemBase(BaseModel):
     producto: str
     cantidad: float
-    lote: int
+    lote: str
 
 class TransferenciaInternaBase(RPCCredencialBase):
     name: str

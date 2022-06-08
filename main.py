@@ -7,6 +7,7 @@ import router
 from routes.v2 import router_maestras
 from routes.v2 import router_transacciones
 from routes.v2 import router_images
+from routes.v2 import router_parametros
 
 # generate model to table postgresql
 db_init = model.Base.metadata.create_all(bind=engine)
@@ -30,6 +31,7 @@ app.include_router(router.router)
 app.include_router(router_maestras.router)
 app.include_router(router_transacciones.router, prefix="/version1")
 app.include_router(router_images.router)
+app.include_router(router_parametros.router)
 
 
 """
