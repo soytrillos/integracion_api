@@ -257,187 +257,189 @@ class maestro_transacciones:
     def transferencias_internas_c(self, models, uid, datos):
         matriz_error = {}
         matriz_error = []
+        
+        for datos in datos['transferencias']:
 
-        """
-            Validar documento
-        """
-        validacion_documento = models.execute_kw(self.db_rpc, uid, self.password_rpc, 
-            'stock.picking', 'search_read', 
-            [
-                [
-                    ['name', '=', datos['name']]
-                ]
-            ], {'fields': ['id', 'name']}
-        )
-        if validacion_documento != []:
-            matriz_error.append({'error_documento': f'Documento {datos["name"]} ya existe'})
-
-        """
-            Validacion contacto
-        """
-        contacto = models.execute_kw(self.db_rpc, uid, self.password_rpc, 
-            'res.partner', 'search_read', 
-            [
-                [
-                    ['vat', '=', datos['partner_id']]
-                ]
-            ], {'fields': ['id', 'vat', 'name']}
-        )
-        if contacto == []:
-            matriz_error.append({'error_contacto': f'Contacto {datos["partner_id"]} No existe'})
-        else:
-            contacto = contacto[0]['id']
-
-        """
-            Validar ubicaciones
-        """
-        location_source = models.execute_kw(self.db_rpc, uid, self.password_rpc, 
-            'stock.location', 'search_read', 
-            [
-                [
-                    ['name', 'like', f"%{datos['location_id']}%"]
-                ]
-            ], {'fields': ['complete_name', 'name', 'display_name', 'comment']}
-        )
-        if location_source == []:
-            matriz_error.append({'error_ubicacion_fuente': f'Ubicacion {datos["location_id"]} No existe'})
-        else:
-            location_source = int(location_source[0]['id'])
-
-        location_dest = models.execute_kw(self.db_rpc, uid, self.password_rpc, 
-            'stock.location', 'search_read', 
-            [
-                [
-                    ['name', 'like', f"%{datos['location_dest_id']}%"]
-                ]
-            ], {'fields': ['complete_name', 'name', 'display_name', 'comment']}
-        )
-        if location_dest == []:
-            matriz_error.append({'error_ubicacion_destino': f'Ubicacion {datos["location_dest_id"]} No existe'})
-        else:
-            location_dest = int(location_dest[0]['id'])
-
-        """
-            Validar producto antes de insertar
-        """
-        for prod in datos['detalle']:
-            producto = models.execute_kw(self.db_rpc, uid, self.password_rpc, 
-                'product.template', 'search_read', 
+            """
+                Validar documento
+            """
+            validacion_documento = models.execute_kw(self.db_rpc, uid, self.password_rpc, 
+                'stock.picking', 'search_read', 
                 [
                     [
-                        ['default_code', '=', prod['producto']]
+                        ['name', '=', datos['name']]
                     ]
-                ], {'fields': ['id', 'name', 'default_code', 'uom_id']}
+                ], {'fields': ['id', 'name']}
             )
-            if producto == []:
-                matriz_error.append({'error_producto': f'Producto {prod["producto"]} No existe'})
-            else:
-                consult_p = producto[0]
+            if validacion_documento != []:
+                matriz_error.append({'error_documento': f'Documento {datos["name"]} ya existe'})
 
-        
-
-        if matriz_error == []:
-            encabezado = models.execute_kw(self.db_rpc, uid, self.password_rpc, 
-                'stock.picking', 'create', 
+            """
+                Validacion contacto
+            """
+            contacto = models.execute_kw(self.db_rpc, uid, self.password_rpc, 
+                'res.partner', 'search_read', 
                 [
-                    {
-                        
-                        "name": datos['name'],
-                        "origin": datos['origin'],
-                        "partner_id": contacto, # Validar que exista
-                        "location_id": location_source, # Validar que exista
-                        "location_dest_id": location_dest, # Validar que exista
-                        "state": "done",
-                        "note": datos['note'],
-                        "picking_type_id": 5, # Transferencia interna
-                        "show_mark_as_todo": False,
-                        "show_operations": True,
-                        "show_reserved": True
-                    }
-                ]
+                    [
+                        ['vat', '=', datos['partner_id']]
+                    ]
+                ], {'fields': ['id', 'vat', 'name']}
             )
-
-            for datos_d in datos['detalle']:
-                """
-                    Validar producto
-                """
-                try:
-                    producto = models.execute_kw(self.db_rpc, uid, self.password_rpc, 
-                        'product.template', 'search_read', 
-                        [
-                            [
-                                ['default_code', '=', datos_d['producto']]
-                            ]
-                        ], {'fields': ['id', 'name', 'default_code', 'uom_id', 'tracking']}
-                    )
-                    if producto == []:
-                        matriz_error.append({'error_producto': f'Producto {datos["product_id"]} No existe'})
-                    else:
-                        consult_p = producto[0]
-                        producto = consult_p['id']
-                        unidad = consult_p['uom_id'][0]
-                        ind_lote = consult_p['tracking']
-                        
-                    """
-                        Validacion lote
-                    """
-                    print(ind_lote)
-                    if ind_lote == 'none':
-                        lote = ''
-                    else:
-                        lote_result = models.execute_kw(self.db_rpc, uid, self.password_rpc, 
-                            'stock.production.lot', 'search_read', 
-                            [
-                                [
-                                    ['company_id', '=', 1],
-                                    ['name', '=', datos['lote']], 
-                                    ['product_id', '=', producto]
-                                ]
-                            ], {'fields': ['id']}
-                        )
-                        if lote_result == []:
-                            lote = models.execute_kw(self.db_rpc, uid, self.password_rpc, 
-                                'stock.production.lot', 'create', 
-                                [
-                                    {
-                                        'company_id': 1,
-                                        'name': datos['lote'], 
-                                        'product_id': producto
-                                    }
-                                ]
-                            )
-                        else:
-                            lote = lote_result[0]['id']
-                
-                    detalle = models.execute_kw(self.db_rpc, uid, self.password_rpc, 
-                        'stock.move.line', 'create', 
-                        [
-                            {
-                                "picking_id": encabezado,
-                                "reference": datos['name'],
-                                "state": "done",
-                                "product_id": producto,
-                                "product_uom_id": 1,
-                                "location_id": location_source,
-                                "location_dest_id": location_dest,
-                                "product_uom_id": unidad,
-                                "lot_id": lote,
-                                "qty_done": datos_d['cantidad'],
-                                "picking_code": 5
-                            }
-                        ]
-                    )
-                except Exception as error:
-                    matriz_error.append({'error_creando': f'Error al intentar crear documento {error}'})
-
-            if matriz_error != []:
-                eliminar_encabezado = models.execute_kw(self.db_rpc, uid, self.password_rpc, 
-                    'stock.picking', 'unlink', 
-                    [[encabezado]]
-                )
-                return matriz_error
+            if contacto == []:
+                matriz_error.append({'error_contacto': f'Contacto {datos["partner_id"]} No existe'})
             else:
-                return f'Creado correctamente, se debe terminar de aprobar en web id: {encabezado}'
+                contacto = contacto[0]['id']
+
+            """
+                Validar ubicaciones
+            """
+            location_source = models.execute_kw(self.db_rpc, uid, self.password_rpc, 
+                'stock.location', 'search_read', 
+                [
+                    [
+                        ['name', 'like', f"%{datos['location_id']}%"]
+                    ]
+                ], {'fields': ['complete_name', 'name', 'display_name', 'comment']}
+            )
+            if location_source == []:
+                matriz_error.append({'error_ubicacion_fuente': f'Ubicacion {datos["location_id"]} No existe'})
+            else:
+                location_source = int(location_source[0]['id'])
+
+            location_dest = models.execute_kw(self.db_rpc, uid, self.password_rpc, 
+                'stock.location', 'search_read', 
+                [
+                    [
+                        ['name', 'like', f"%{datos['location_dest_id']}%"]
+                    ]
+                ], {'fields': ['complete_name', 'name', 'display_name', 'comment']}
+            )
+            if location_dest == []:
+                matriz_error.append({'error_ubicacion_destino': f'Ubicacion {datos["location_dest_id"]} No existe'})
+            else:
+                location_dest = int(location_dest[0]['id'])
+
+            """
+                Validar producto antes de insertar
+            """
+            for prod in datos['detalle']:
+                producto = models.execute_kw(self.db_rpc, uid, self.password_rpc, 
+                    'product.template', 'search_read', 
+                    [
+                        [
+                            ['default_code', '=', prod['producto']]
+                        ]
+                    ], {'fields': ['id', 'name', 'default_code', 'uom_id']}
+                )
+                if producto == []:
+                    matriz_error.append({'error_producto': f'Producto {prod["producto"]} No existe'})
+                else:
+                    consult_p = producto[0]
+
+            
+
+            if matriz_error == []:
+                encabezado = models.execute_kw(self.db_rpc, uid, self.password_rpc, 
+                    'stock.picking', 'create', 
+                    [
+                        {
+                            
+                            "name": datos['name'],
+                            "origin": datos['origin'],
+                            "partner_id": contacto, # Validar que exista
+                            "location_id": location_source, # Validar que exista
+                            "location_dest_id": location_dest, # Validar que exista
+                            "state": "done",
+                            "note": datos['note'],
+                            "picking_type_id": 5, # Transferencia interna
+                            "show_mark_as_todo": False,
+                            "show_operations": True,
+                            "show_reserved": True
+                        }
+                    ]
+                )
+
+                for datos_d in datos['detalle']:
+                    """
+                        Validar producto
+                    """
+                    try:
+                        producto = models.execute_kw(self.db_rpc, uid, self.password_rpc, 
+                            'product.template', 'search_read', 
+                            [
+                                [
+                                    ['default_code', '=', datos_d['producto']]
+                                ]
+                            ], {'fields': ['id', 'name', 'default_code', 'uom_id', 'tracking']}
+                        )
+                        if producto == []:
+                            matriz_error.append({'error_producto': f'Producto {datos["product_id"]} No existe'})
+                        else:
+                            consult_p = producto[0]
+                            producto = consult_p['id']
+                            unidad = consult_p['uom_id'][0]
+                            ind_lote = consult_p['tracking']
+                            
+                        """
+                            Validacion lote
+                        """
+                        print(ind_lote)
+                        if ind_lote == 'none':
+                            lote = ''
+                        else:
+                            lote_result = models.execute_kw(self.db_rpc, uid, self.password_rpc, 
+                                'stock.production.lot', 'search_read', 
+                                [
+                                    [
+                                        ['company_id', '=', 1],
+                                        ['name', '=', datos['lote']], 
+                                        ['product_id', '=', producto]
+                                    ]
+                                ], {'fields': ['id']}
+                            )
+                            if lote_result == []:
+                                lote = models.execute_kw(self.db_rpc, uid, self.password_rpc, 
+                                    'stock.production.lot', 'create', 
+                                    [
+                                        {
+                                            'company_id': 1,
+                                            'name': datos['lote'], 
+                                            'product_id': producto
+                                        }
+                                    ]
+                                )
+                            else:
+                                lote = lote_result[0]['id']
+                    
+                        detalle = models.execute_kw(self.db_rpc, uid, self.password_rpc, 
+                            'stock.move.line', 'create', 
+                            [
+                                {
+                                    "picking_id": encabezado,
+                                    "reference": datos['name'],
+                                    "state": "done",
+                                    "product_id": producto,
+                                    "product_uom_id": 1,
+                                    "location_id": location_source,
+                                    "location_dest_id": location_dest,
+                                    "product_uom_id": unidad,
+                                    "lot_id": lote,
+                                    "qty_done": datos_d['cantidad'],
+                                    "picking_code": 5
+                                }
+                            ]
+                        )
+                    except Exception as error:
+                        matriz_error.append({'error_creando': f'Error al intentar crear documento {error}'})
+
+                if matriz_error != []:
+                    eliminar_encabezado = models.execute_kw(self.db_rpc, uid, self.password_rpc, 
+                        'stock.picking', 'unlink', 
+                        [[encabezado]]
+                    )
+                    return matriz_error
+                else:
+                    return f'Creado correctamente, se debe terminar de aprobar en web id: {encabezado}'
         else:
             return matriz_error
 

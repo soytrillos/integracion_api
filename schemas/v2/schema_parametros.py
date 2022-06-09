@@ -12,5 +12,5 @@ class _LocalizacionRPC(BaseModel):
     db_rpc: str
     email_rpc: str
     token_rpc: str
-    clientes: List[_LocalizacionBase]
+    localizaciones: List[_LocalizacionBase]
 

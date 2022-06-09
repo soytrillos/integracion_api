@@ -25,7 +25,7 @@ class maestra_parametros:
                     [
                         ['complete_name', '=', "WH/Stock"]
                     ]
-                ], {'fields': ['id', 'name']}                
+                ], {'fields': ['id', 'name']}
             )
             if localizacion_padre != []:
                 padre = localizacion_padre[0]['id']
@@ -48,8 +48,7 @@ class maestra_parametros:
                         {
                             "location_id": padre,
                             "complete_name": f"WH/Stock/{dato['name']}",
-                            "name": dato['name'],
-                            "barcode": dato['codigo_barras']
+                            "name": dato['name']
                         }
                     ]
                 )
