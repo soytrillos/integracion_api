@@ -5,7 +5,7 @@ from pydantic import BaseModel, Field
 class DetalleItemBase(BaseModel):
     producto: str
     cantidad: float
-    lote: int
+    lote: str
 
 class TransferenciaInternaBase(BaseModel):
     name: str

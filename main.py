@@ -29,7 +29,7 @@ async def Home():
 
 app.include_router(router.router)
 app.include_router(router_maestras.router)
-app.include_router(router_transacciones.router, prefix="/version1")
+app.include_router(router_transacciones.router)
 app.include_router(router_images.router)
 app.include_router(router_parametros.router)
 
