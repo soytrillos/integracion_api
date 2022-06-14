@@ -140,6 +140,7 @@ class maestra_clientes:
                     {
                         'vat': datos["vat"],
                         'l10n_latam_identification_type_id': int(s_identificacion),
+                        'sucursal': datos['sucursal'],
                         'name': datos["nombre_completo"],
                         'email': datos["correo"],
                         'phone': datos["telefono"],

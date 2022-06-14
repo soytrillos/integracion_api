@@ -21,6 +21,7 @@ class ProductosBase(BaseModel):
 class ClientesBase(BaseModel):
     vat: str
     tipo_identificacion: str
+    sucursal: Optional[str]
     nombre_completo: str
     correo: str
     telefono: str
