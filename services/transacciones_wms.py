@@ -828,12 +828,13 @@ class maestro_transacciones:
                 ]
             ], {'fields': ['id', 'name', 'default_code', 'uom_id', 'tracking']}
         )
+        print(producto_result)
         if producto_result != []:
             producto_result = producto_result[0]
             producto = producto_result['id']
             ind_lote = producto_result['tracking']
         else:
-            matriz_error = {'error_producto': f'El producto {datos["product_id"]}'}
+            matriz_error = {'error_producto': f'El producto {datos["product_id"]} no existe'}
 
         """
             Validacion localizacion
@@ -842,76 +843,100 @@ class maestro_transacciones:
             'stock.location', 'search_read', 
             [
                 [
-                    ['name', 'like', f"%{datos['location_id']}%"]
+                    ['complete_name', 'like', f"%{datos['location_id']}%"]
                 ]
             ], {'fields': ['complete_name', 'name', 'display_name', 'comment']}
         )
         location_id = location_id[0]['id']
         
 
-        """
-            Validacion inventario de producto y localizacion
-        """
-        ajustes = models.execute_kw(self.db_rpc, uid, self.password_rpc, 
-            'stock.quant', 'search_read', 
-            [
-                [
-                    ['product_id', '=', producto],
-                    ['location_id', '=', location_id]
-                ]
-            ], {'fields': ['id']}
-        )
-        if ajustes == []:
-            ajuste = 0
-        else:
-            ajuste = ajustes[0]['id']
-
-            
-        """
-            Validacion lote
-        """
-        print(ind_lote)
-        if ind_lote == 'none':
-            lote = ''
-        else:
-            lote_result = models.execute_kw(self.db_rpc, uid, self.password_rpc, 
-                'stock.production.lot', 'search_read', 
+        if matriz_error == {}:
+            """
+                Validacion inventario de producto y localizacion
+            """
+            ajustes = models.execute_kw(self.db_rpc, uid, self.password_rpc, 
+                'stock.quant', 'search_read', 
                 [
                     [
-                        ['company_id', '=', 1],
-                        ['name', '=', datos['lot_id']], 
-                        ['product_id', '=', producto]
+                        ['product_id', '=', producto],
+                        ['location_id', '=', location_id]
                     ]
                 ], {'fields': ['id']}
             )
-            if lote_result == []:
-                lote = models.execute_kw(self.db_rpc, uid, self.password_rpc, 
-                    'stock.production.lot', 'create', 
-                    [
-                        {
-                            'company_id': 1,
-                            'name': datos['lot_id'], 
-                            'product_id': producto
-                        }
-                    ]
-                )
+            if ajustes == []:
+                ajuste = 0
             else:
-                lote = lote_result[0]['id']
+                ajuste = ajustes[0]['id']
+
+    
+            """
+                Validacion lote
+            """
+            if ind_lote == 'none':
+                lote = ''
+            else:
+                lote_result = models.execute_kw(self.db_rpc, uid, self.password_rpc, 
+                    'stock.production.lot', 'search_read', 
+                    [
+                        [
+                            ['company_id', '=', 1],
+                            ['name', '=', datos['lot_id']], 
+                            ['product_id', '=', producto]
+                        ]
+                    ], {'fields': ['id']}
+                )
+                if lote_result == []:
+                    lote = models.execute_kw(self.db_rpc, uid, self.password_rpc, 
+                        'stock.production.lot', 'create', 
+                        [
+                            {
+                                'company_id': 1,
+                                'name': datos['lot_id'], 
+                                'product_id': producto
+                            }
+                        ]
+                    )
+                else:
+                    lote = lote_result[0]['id']
         
         if matriz_error == {} and ajuste != 0:
-            ajuste = models.execute_kw(self.db_rpc, uid, self.password_rpc, 
-                'stock.quant', 'write', 
-                [
-                    [ajuste],
-                    {
-                        'product_id': producto,
-                        'location_id': location_id,
-                        'lot_id': lote,
-                        'quantity': datos['quantity']
-                    }
-                ]
-            )
-            return f'Actualizado correctamente: {producto}, Estado: {ajuste}'
+            if ind_lote == 'none':
+                try:
+                    ajuste = models.execute_kw(self.db_rpc, uid, self.password_rpc, 
+                        'stock.quant', 'write', 
+                        [
+                            [ajuste],
+                            {
+                                'product_id': producto,
+                                'location_id': location_id,
+                                #'lot_id': lote,
+                                'quantity': datos['quantity']
+                            }
+                        ]
+                    )
+                    return f'Actualizado correctamente: {producto}, Estado: {ajuste}'
+                except Exception as error:
+                    matriz_error = {'error_ajuste': f'Error en RPC {error}'}
+                    return matriz_error
+            elif ind_lote != 'none':
+                try:
+                    ajuste = models.execute_kw(self.db_rpc, uid, self.password_rpc, 
+                        'stock.quant', 'write', 
+                        [
+                            [ajuste],
+                            {
+                                'product_id': producto,
+                                'location_id': location_id,
+                                'lot_id': lote,
+                                'quantity': datos['quantity']
+                            }
+                        ]
+                    )
+                    return f'Actualizado correctamente: {producto}, Estado: {ajuste}'
+                except Exception as error:
+                    matriz_error = {'error_ajuste': f'Error en RPC {error}'}
+                    return matriz_error
+
         elif matriz_error == {} and ajuste == 0:
             ajuste = models.execute_kw(self.db_rpc, uid, self.password_rpc, 
                 'stock.quant', 'create', 
