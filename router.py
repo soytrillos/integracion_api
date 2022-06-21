@@ -343,7 +343,7 @@ async def search_venta(ventas: RPCCredencialBase):
                 iva = cls_venta.iva_rpc(conexion_rpc[0], conexion_rpc[1], det_compra['tax_id'][0])
                 ventas_dict[f'{en_venta["name"]}']['detalle'].append({
                         'product_id': producto[0]['default_code'],
-                        'product_uom_qty': det_compra['product_uom_qty'],
+                        'product_uom_qty': det_compra['qty_delivered'],
                         'tax_id': iva[0]['amount'],
                         'price_unit': det_compra['price_unit'],
                         'discount': det_compra['discount']

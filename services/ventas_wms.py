@@ -59,7 +59,8 @@ class maestro_ventas:
                 [
                     ['state', '=', 'sale'],
                     ['invoice_status', '=', 'to invoice'],
-                    ['date_order', '>=', '2022-04-24']
+                    ['date_order', '>=', '2022-04-24'],
+                    ['effective_date', '>=', '2022-06-01']
                 ]
             ], {'fields': ['id', 'name', 'partner_id', 'date_order', 'delivery_count', 'company_id', 'warehouse_id'], 'order': 'id ASC'}
         )        
@@ -71,9 +72,10 @@ class maestro_ventas:
             [
                 [
                     ['order_id', '=', order_id],
-                    ['state', '=', 'sale']
+                    ['state', '=', 'sale'],
+                    ['qty_delivered', '>', 0]
                 ]
-            ], {'fields': ['order_id', 'product_id', 'product_uom_qty', 'tax_id', 'price_unit', 'discount']}
+            ], {'fields': ['order_id', 'product_id', 'qty_delivered', 'tax_id', 'price_unit', 'discount']}
         )        
         return result
     
