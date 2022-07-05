@@ -19,7 +19,7 @@ class maestro_ventas:
     
     def productos_rpc(self, models, uid, id_producto):
         result = models.execute_kw(self.db_rpc, uid, self.password_rpc, 
-            'product.template', 'search_read', 
+            'product.product', 'search_read', 
             [
                 [
                     ['id', '=', id_producto]
@@ -129,7 +129,7 @@ class maestro_ventas:
     
     def sale_order_line_c(self, models, uid, datos, encabezado, id_producto):
         producto = models.execute_kw(self.db_rpc, uid, self.password_rpc, 
-            'product.template', 'search_read', 
+            'product.product', 'search_read', 
             [
                 [
                     ['default_code', '=', id_producto]
