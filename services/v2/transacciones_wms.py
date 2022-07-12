@@ -392,7 +392,7 @@ class maestro_transacciones:
                                 [
                                     [
                                         ['company_id', '=', 1],
-                                        ['name', '=', datos['lote']], 
+                                        ['name', '=', datos_d['lote']], 
                                         ['product_id', '=', producto]
                                     ]
                                 ], {'fields': ['id']}
@@ -403,14 +403,14 @@ class maestro_transacciones:
                                     [
                                         {
                                             'company_id': 1,
-                                            'name': datos['lote'], 
+                                            'name': datos_d['lote'], 
                                             'product_id': producto
                                         }
                                     ]
                                 )
                             else:
                                 lote = lote_result[0]['id']
-                    
+                                
                         detalle = models.execute_kw(self.db_rpc, uid, self.password_rpc, 
                             'stock.move.line', 'create', 
                             [
@@ -430,6 +430,7 @@ class maestro_transacciones:
                             ]
                         )
                     except Exception as error:
+                        print(error)
                         matriz_error.append({'error_creando': f'Error al intentar crear documento {error}'})
 
                 if matriz_error != []:
